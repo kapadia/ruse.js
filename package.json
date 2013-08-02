@@ -1,0 +1,22 @@
+{
+  "name": "ruse.js",
+  "version": "0.0.1",
+  "author": "Amit Kapadia <amit@zooniverse.org>",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kapadia/ruse.js.git"
+  },
+  "dependencies": {
+  },
+  "scripts": {
+    "start": "cake server"
+  },
+  "devDependencies": {
+    "coffee-script" : "~1.6.x",
+    "http-server": "~0.5.x"
+  },
+  "_dependencyOrder": [
+    "Ruse",
+    "Shaders"
+  ]
+}

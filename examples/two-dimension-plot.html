@@ -1,0 +1,58 @@
+<html>
+<head>
+  <link rel="stylesheet" href="astrojs.css" type="text/css" charset="utf-8">
+  <!-- <style>
+  canvas {
+    border: 1px solid red;
+  }
+  </style> -->
+  <script type="text/javascript" src="lib/gl-matrix.js"></script>
+  <script type="text/javascript" src="../dist/ruse.js"></script>
+  
+  <script type="text/javascript" src="lib/fits.js"></script>
+  
+  <script type="text/javascript">
+  
+  function main() {
+    
+    // Pretend we already have a gl context running
+    var canvas = document.querySelector("#ruse");
+    canvas.width = 500;
+    canvas.height = 300;
+    var gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    
+    // Initialize a ruse (aka plot) using an existing gl context
+    // var ruse = new astro.Ruse(canvas, 500, 300);
+    var ruse = new astro.Ruse(gl);
+    
+    var key1 = "RACEN";
+    var key2 = "DECCEN";
+    
+    new astro.FITS('data/plates-dr9.fits', function(f) {
+      var table = f.getDataUnit();
+      table.getRows(0, table.rows, function(rows) {
+        rows = rows.map(function(d) {
+          datum = {};
+          datum[key1] = d[key1];
+          datum[key2] = d[key2];
+          return datum;
+        });
+        ruse.plot(rows);
+      });
+    });
+    
+  }
+  </script>
+  
+</head>
+
+<body onload='main()'>
+  <div class='content'>
+    <h3>Two Dimension Plot</h3>
+    <!-- <div id="ruse"></div> -->
+    <div class='container'>
+      <canvas id="ruse"></canvas>
+    </div>
+  </div>
+</body>
+</html>
