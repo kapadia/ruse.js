@@ -1,12 +1,12 @@
 <html>
 <head>
-  <title>Two Dimensional Scatter Plot Example</title>
+  <title>Histogram Example</title>
   <link rel="stylesheet" href="astrojs.css" type="text/css" charset="utf-8">
-  <!-- <style>
+  <style>
   canvas {
     border: 1px solid red;
   }
-  </style> -->
+  </style>
   <script type="text/javascript" src="lib/gl-matrix.js"></script>
   <script type="text/javascript" src="../dist/ruse.js"></script>
   
@@ -17,28 +17,21 @@
   function main() {
     
     // Pretend we already have a gl context running
-    var canvas = document.querySelector("#ruse");
-    canvas.width = 800;
-    canvas.height = 400;
-    var gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
+    var el = document.querySelector("#ruse");
     
     // Initialize a ruse (aka plot) using an existing gl context
-    // var ruse = new astro.Ruse(canvas, 500, 300);
-    var ruse = new astro.Ruse(gl);
-    
-    var key1 = "RACEN";
-    var key2 = "DECCEN";
+    var ruse = new astro.Ruse(el, 500, 300);
+    var key = "RACEN";
     
     new astro.FITS('data/plates-dr9.fits', function(f) {
       var table = f.getDataUnit();
       table.getRows(0, table.rows, function(rows) {
-        rows = rows.map(function(d) {
+        row = rows.map(function(d) {
           datum = {};
-          datum[key1] = d[key1];
-          datum[key2] = d[key2];
+          datum[key] = d[key];
           return datum;
         });
-        ruse.plot(rows);
+        ruse.plot(row);
       });
     });
     
@@ -49,11 +42,8 @@
 
 <body onload='main()'>
   <div class='content'>
-    <h3>Two Dimension Plot</h3>
-    <!-- <div id="ruse"></div> -->
-    <div class='container'>
-      <canvas id="ruse"></canvas>
-    </div>
+    <h3>One Dimension Plot</h3>
+    <div id="ruse"></div>
   </div>
 </body>
 </html>

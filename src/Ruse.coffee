@@ -57,15 +57,15 @@ class Ruse
     @xOldOffset = null
     @yOldOffset = null
     
-    @canvas.onmousedown = (e) =>
+    @axesCanvas.onmousedown = (e) =>
       @drag = true
       @xOldOffset = e.clientX
       @yOldOffset = e.clientY
       
-    @canvas.onmouseup = (e) =>
+    @axesCanvas.onmouseup = (e) =>
       @drag = false
       
-    @canvas.onmousemove = (e) =>
+    @axesCanvas.onmousemove = (e) =>
       return unless @drag
       
       x = e.clientX
@@ -85,10 +85,10 @@ class Ruse
       
       @draw()
     
-    @canvas.onmouseout = (e) =>
+    @axesCanvas.onmouseout = (e) =>
       @drag = false
     
-    @canvas.onmouseover = (e) =>
+    @axesCanvas.onmouseover = (e) =>
       @drag = false
   
   constructor: (arg, width, height) ->
@@ -150,16 +150,21 @@ class Ruse
     @plotBuffer = @gl.createBuffer()
     # @axesBuffer = @gl.createBuffer()
     
-    # Plot parameters
+    # Plot style parameters
     @margin = 0.02
     @lineWidth = 0.005
-    @fontSize = 9
-    @fontFamily = "Helvetica Neue"
+    @fontSize = 10
+    @fontFamily = "Helvetica"
     @axisPadding = 4
     @xTicks = 6
     @yTicks = 6
     @xTickSize = 4
     @yTickSize = 4
+    
+    # Plot parameters
+    @targetBinWidth = 1  # pixel units
+    @bins = null
+    
     
     # @_setupMouseControls()
   
@@ -194,11 +199,181 @@ class Ruse
     # @_setMatrices(@programs.axes)
     # @gl.drawArrays(@gl.TRIANGLES, 0, @axesBuffer.numItems)
   
-  plot: (rows) ->
-    @_scatter2D(rows)
+  getHistogram: (arr, min, max, bins) ->
     
-    [key1, key2] = Object.keys( rows[0] )
-    @_makeAxes(key1, key2)
+    range = max - min
+    
+    h = new Uint32Array(bins)
+    dx = range / bins
+    
+    i = arr.length
+    while i--
+      value = arr[i]
+      index = ~~( (value - min) / dx )
+      h[index] += 1
+      
+    h.dx = dx
+    return h
+  
+  getExtent: (arr) ->
+    
+    # Set initial values for min and max
+    index = arr.length
+    while index--
+      value = arr[index]
+      continue if isNaN(value)
+      
+      min = max = value
+      break
+      
+    # Continue loop to find extent
+    while index--
+      value = arr[index]
+      
+      if isNaN(value)
+        continue
+        
+      if value < min
+        min = value
+        
+      if value > max
+        max = value
+        
+    return [min, max]
+  
+  histogram: (data) ->
+    # TODO: Compute histogram and draw a bunch of triangles
+    console.log 'histogram'
+    
+    # Data may be formated as an array of one dimensional objects
+    # or an array of values
+    datum = data[0]
+    if @isObject(datum)
+      
+      # Get key
+      key = Object.keys(datum)[0] 
+      
+      # Parse values from array of objects
+      data = data.map( (d) -> d[key] )
+    
+    # TODO: Determine a bin size based on the extent and size of canvas
+    #       e.g. each bin should be greater than 1 pixel in width.  Go for 16 px wide.
+    
+    # Get the min and max
+    [min, max] = @getExtent(data)
+    
+    # Determine optimal bin size unless specified
+    unless @bins
+      
+      # Get width of drawing area
+      width = @width - @_getMargin() * @width
+      
+      # Get number of bins able to fit in plot given a target bin width
+      @bins = Math.floor(width / @targetBinWidth)
+    
+    # Compute histogram
+    h = @getHistogram(data, min, max, @bins)
+    
+    # Generate vertices describing histogram
+    margin = @_getMargin()
+    clipspaceSize = 2.0 - 2 * margin
+    clipspaceBinWidth = clipspaceSize / @bins
+    [histMin, histMax] = @getExtent(h)
+    
+    nVertices = 6 * @bins
+    vertices = new Float32Array(2 * nVertices)
+    
+    x = -1.0 + margin
+    y = y0 = -1.0 + margin
+    
+    for value, index in h
+      i = 12 * index
+      
+      vertices[i + 0] = x
+      vertices[i + 1] = y0
+      vertices[i + 2] = x
+      vertices[i + 3] = (value * (clipspaceSize - 1) / histMax)
+      vertices[i + 4] = x + clipspaceBinWidth
+      vertices[i + 5] = y0
+      
+      vertices[i + 6] = vertices[i + 4]
+      vertices[i + 7] = vertices[i + 5]
+      vertices[i + 8] = vertices[i + 4]
+      vertices[i + 9] = vertices[i + 3]
+      vertices[i + 10] = vertices[i + 2]
+      vertices[i + 11] = vertices[i + 3]
+      
+      x += clipspaceBinWidth
+    
+    @gl.useProgram(@programs.ruse)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @plotBuffer)
+    
+    @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
+    @plotBuffer.itemSize = 2
+    @plotBuffer.numItems = nVertices
+    
+    @gl.vertexAttribPointer(@programs.ruse.vertexPositionAttribute, @plotBuffer.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.drawArrays(@gl.TRIANGLES, 0, @plotBuffer.numItems)
+    
+  scatter3D: (args...) ->
+    console.log 'scatter3D'
+  
+  # Helper methods to check type
+  isArray: (obj) ->
+    type = Object.prototype.toString.call(obj)
+    return if type.indexOf('Array') > -1 then true else false
+    
+  isObject: (obj) ->
+    type = Object.prototype.toString.call(obj)
+    return if type.indexOf('Object') > -1 then true else false
+  
+  # Generic call to plot data
+  # this function determines the dimensionality of the 
+  # data, calling the appropriate function.
+  plot: (args...) ->
+    
+    if args.length is 1
+      arg = args[0]
+      
+      # Check type of argument
+      if @isArray(arg)
+        
+        # Check first element
+        datum = arg[0]
+        if @isObject(datum)
+          
+          # Check dimensionality
+          keys = Object.keys(datum)
+          dimensions = keys.length
+          
+          switch dimensions
+            when 1
+              @histogram(arg)
+              return
+            when 2
+              @scatter2D(arg)
+              return
+            when 3
+              @scatter3D(arg)
+              return
+        else
+          # Assuming an array of values
+          @histogram(arg)
+          return
+    
+    # Length of arguments is greater than one
+    # assume one numerical array per dimension
+    
+    switch args.length
+      when 2
+        @scatter2D(args...)
+        return
+      when 3
+        @scatter3D(args...)
+        return
+    
+    # If code gets here, then something wrong with input data
+    throw "Input data not recognized by Ruse."
   
   _makeAxesGl: (key1, key2) ->
     margin = @margin
@@ -301,7 +476,6 @@ class Ruse
       context.lineTo(x1 - 1 + @yTickSize, yTick)
       context.stroke()
     
-    
     # Axes names
     context.font = "#{@fontSize}px #{@fontFamily}"
     
@@ -322,12 +496,11 @@ class Ruse
     context.fillText("#{key2}", x, y)
     context.restore()
   
-  _scatter2D: (data) ->
+  scatter2D: (data) ->
     
     # Should be able to accept data in various formats
     # e.g. [{key1: val1, key2: val2}, ...]
     # two arrays
-    # object with two keys and arrays?
     
     @gl.useProgram(@programs.ruse)
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @plotBuffer)
@@ -372,6 +545,10 @@ class Ruse
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @plotBuffer)
     @gl.vertexAttribPointer(@programs.ruse.vertexPositionAttribute, @plotBuffer.itemSize, @gl.FLOAT, false, 0, 0)
     @gl.drawArrays(@gl.POINTS, 0, @plotBuffer.numItems)
+    
+    # TODO: Generalize this.
+    [key1, key2] = Object.keys( data[0] )
+    @_makeAxes(key1, key2)
 
 
 @astro = {} unless @astro?
