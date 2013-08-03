@@ -129,13 +129,15 @@
       mat4.identity(this.rotationMatrix);
       mat4.identity(this.mvMatrix);
       this._setMatrices(this.programs.ruse);
-      this._setMatrices(this.programs.axes);
       this.gl.viewport(0, 0, this.width, this.height);
       this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
       this.plotBuffer = this.gl.createBuffer();
       this.axesBuffer = this.gl.createBuffer();
-      this.margin = 0.10;
+      this.margin = 0.02;
       this.lineWidth = 0.005;
+      this.fontSize = 9;
+      this.fontFamily = "Helvetica Neue";
+      this.axisPadding = 4;
     }
 
     Ruse.prototype._canvas2clipspace = function(x, y) {
@@ -184,15 +186,19 @@
       return this.gl.drawArrays(this.gl.TRIANGLES, 0, this.axesBuffer.numItems);
     };
 
+    Ruse.prototype._getMargin = function() {
+      return this.margin + (this.fontSize + this.axisPadding) * 2 / this.height;
+    };
+
     Ruse.prototype._makeAxes = function(key1, key2) {
-      var context, i, key1measure, key2measure, lineWidth, lineWidthX, lineWidthY, margin, value, vertices, x, xp, y, yp, _i, _len, _ref;
+      var context, i, key1width, key2width, lineWidth, lineWidthX, lineWidthY, margin, value, vertices, x, xp, y, yp, _i, _len, _ref, _ref1;
       context = this.axesCanvas.getContext('2d');
       context.imageSmoothingEnabled = false;
       context.lineWidth = 1;
       lineWidth = context.lineWidth;
       lineWidthX = lineWidth * 2 / this.width;
       lineWidthY = lineWidth * 2 / this.height;
-      margin = this.margin;
+      margin = this._getMargin();
       vertices = new Float32Array([-1.0 + margin - lineWidthX, 1.0, -1.0 + margin - lineWidthX, -1.0, -1.0, -1.0 + margin - lineWidthY, 1.0, -1.0 + margin - lineWidthY]);
       for (i = _i = 0, _len = vertices.length; _i < _len; i = _i += 2) {
         value = vertices[i];
@@ -210,19 +216,20 @@
       context.moveTo(vertices[4], vertices[5]);
       context.lineTo(vertices[6], vertices[7]);
       context.stroke();
-      context.font = "9px Helvetica Neue";
-      key1measure = context.measureText(key1);
-      key2measure = context.measureText(key2);
-      context.fillText("" + key1, 446, 297);
-      return context.fillText("" + key2, 0, 10);
+      context.font = "" + this.fontSize + "px " + this.fontFamily;
+      key1width = context.measureText(key1).width;
+      key2width = context.measureText(key2).width;
+      _ref1 = this._clipspace2canvas(1.0 - margin, -1.0 + margin), x = _ref1[0], y = _ref1[1];
+      x -= key1width;
+      y += this.fontSize + 4;
+      return context.fillText("" + key1, x, y);
     };
 
     Ruse.prototype._scatter2D = function(data) {
-      var datum, gl, i, index, key1, key2, max1, max2, min1, min2, nVertices, range1, range2, val1, val2, vertices, _i, _len, _ref;
-      console.log('_scatter2D');
-      gl = this.gl;
-      gl.useProgram(this.programs.ruse);
+      var datum, i, index, key1, key2, margin, max1, max2, min1, min2, nVertices, range1, range2, val1, val2, vertices, _i, _len, _ref;
+      this.gl.useProgram(this.programs.ruse);
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.plotBuffer);
+      margin = this._getMargin();
       nVertices = data.length;
       vertices = new Float32Array(2 * nVertices);
       _ref = Object.keys(data[0]), key1 = _ref[0], key2 = _ref[1];
@@ -252,8 +259,8 @@
         i = 2 * index;
         val1 = datum[key1];
         val2 = datum[key2];
-        vertices[i] = 2 * (1 - this.margin) / range1 * (val1 - min1) - 1 + this.margin;
-        vertices[i + 1] = 2 * (1 - this.margin) / range2 * (val2 - min2) - 1 + this.margin;
+        vertices[i] = 2 * (1 - margin) / range1 * (val1 - min1) - 1 + margin;
+        vertices[i + 1] = 2 * (1 - margin) / range2 * (val2 - min2) - 1 + margin;
       }
       this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
       this.plotBuffer.itemSize = 2;

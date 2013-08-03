@@ -142,7 +142,7 @@ class Ruse
     mat4.identity(@mvMatrix)
     
     @_setMatrices(@programs.ruse)
-    @_setMatrices(@programs.axes)
+    # @_setMatrices(@programs.axes)
     
     @gl.viewport(0, 0, @width, @height)
     @gl.clear(@gl.COLOR_BUFFER_BIT | @gl.DEPTH_BUFFER_BIT)
@@ -151,8 +151,11 @@ class Ruse
     @axesBuffer = @gl.createBuffer()
     
     # Plot parameters
-    @margin = 0.10
+    @margin = 0.02
     @lineWidth = 0.005
+    @fontSize = 9
+    @fontFamily = "Helvetica Neue"
+    @axisPadding = 4
     
     # @_setupMouseControls()
   
@@ -220,6 +223,9 @@ class Ruse
     @gl.vertexAttribPointer(@programs.axes.vertexPositionAttribute, @axesBuffer.itemSize, @gl.FLOAT, false, 0, 0)
     @gl.drawArrays(@gl.TRIANGLES, 0, @axesBuffer.numItems)
   
+  _getMargin: ->
+    return @margin + (@fontSize + @axisPadding) * 2 / @height
+  
   _makeAxes: (key1, key2) ->
     context = @axesCanvas.getContext('2d')
     context.imageSmoothingEnabled = false
@@ -231,7 +237,7 @@ class Ruse
     lineWidthX = lineWidth * 2 / @width
     lineWidthY = lineWidth * 2 / @height
     
-    margin = @margin
+    margin = @_getMargin()
     
     # Determine axes given margin and line width
     vertices = new Float32Array([
@@ -264,14 +270,24 @@ class Ruse
     context.stroke()
     
     # Axes names
-    # TODO: make parameter
-    context.font = "9px Helvetica Neue"
+    context.font = "#{@fontSize}px #{@fontFamily}"
     
-    key1measure = context.measureText(key1)
-    key2measure = context.measureText(key2)
+    key1width = context.measureText(key1).width
+    key2width = context.measureText(key2).width
     
-    context.fillText("#{key1}", 446, 297)
-    context.fillText("#{key2}", 0, 10)
+    # Measurements for x axis
+    [x, y] = @_clipspace2canvas(1.0 - margin, -1.0 + margin)
+    x -= key1width
+    y += @fontSize + 4
+    
+    context.fillText("#{key1}", x, y)
+    
+    # context.save()
+    # [x, y] = @_clipspace2canvas(-1.0 - margin, 1.0 + margin)
+    # context.translate(@width / 2, @height / 2)
+    # context.rotate(-Math.PI / 2)
+    # context.fillText("#{key2}", 0, 0)
+    # context.restore()
   
   _scatter2D: (data) ->
     
@@ -280,11 +296,11 @@ class Ruse
     # two arrays
     # object with two keys and arrays?
     
-    console.log '_scatter2D'
-    gl = @gl
-    gl.useProgram(@programs.ruse)
-    
+    @gl.useProgram(@programs.ruse)
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @plotBuffer)
+    
+    # Compute margin that incorporates spaces needed for axes labels
+    margin = @_getMargin()
     
     nVertices = data.length
     vertices = new Float32Array(2 * nVertices)
@@ -313,12 +329,8 @@ class Ruse
       val1 = datum[key1]
       val2 = datum[key2]
       
-      
-      vertices[i] = 2 * (1 - @margin) / range1 * (val1 - min1) - 1 + @margin
-      vertices[i + 1] = 2 * (1 - @margin) / range2 * (val2 - min2) - 1 + @margin
-      
-      # vertices[i] = (2 / range1) * (val1 - min1) - 1
-      # vertices[i + 1] = (2 / range2) * (val2 - min2) - 1
+      vertices[i] = 2 * (1 - margin) / range1 * (val1 - min1) - 1 + margin
+      vertices[i + 1] = 2 * (1 - margin) / range2 * (val2 - min2) - 1 + margin
     
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
     @plotBuffer.itemSize = 2
