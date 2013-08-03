@@ -221,7 +221,7 @@
     };
 
     Ruse.prototype.histogram = function(data) {
-      var clipspaceBinWidth, clipspaceSize, datum, h, histMax, histMin, i, index, key, margin, max, min, nVertices, value, vertices, width, x, y, y0, _i, _len, _ref, _ref1;
+      var clipspaceBinWidth, clipspaceLower, clipspaceSize, clipspaceUpper, datum, h, histMax, histMin, i, index, key, margin, max, min, nVertices, value, vertices, width, x, y, y0, _i, _len, _ref, _ref1;
       console.log('histogram');
       datum = data[0];
       if (this.isObject(datum)) {
@@ -238,6 +238,8 @@
       h = this.getHistogram(data, min, max, this.bins);
       margin = this._getMargin();
       clipspaceSize = 2.0 - 2 * margin;
+      clipspaceLower = -1.0 + margin;
+      clipspaceUpper = 1.0 - margin;
       clipspaceBinWidth = clipspaceSize / this.bins;
       _ref1 = this.getExtent(h), histMin = _ref1[0], histMax = _ref1[1];
       nVertices = 6 * this.bins;
@@ -250,7 +252,7 @@
         vertices[i + 0] = x;
         vertices[i + 1] = y0;
         vertices[i + 2] = x;
-        vertices[i + 3] = value * (clipspaceSize - 1) / histMax;
+        vertices[i + 3] = (clipspaceUpper - clipspaceLower) * value / histMax + clipspaceLower;
         vertices[i + 4] = x + clipspaceBinWidth;
         vertices[i + 5] = y0;
         vertices[i + 6] = vertices[i + 4];

@@ -277,6 +277,10 @@ class Ruse
     # Generate vertices describing histogram
     margin = @_getMargin()
     clipspaceSize = 2.0 - 2 * margin
+    
+    clipspaceLower = -1.0 + margin
+    clipspaceUpper = 1.0 - margin
+    
     clipspaceBinWidth = clipspaceSize / @bins
     [histMin, histMax] = @getExtent(h)
     
@@ -292,7 +296,7 @@ class Ruse
       vertices[i + 0] = x
       vertices[i + 1] = y0
       vertices[i + 2] = x
-      vertices[i + 3] = (value * (clipspaceSize - 1) / histMax)
+      vertices[i + 3] = (clipspaceUpper - clipspaceLower) * value / histMax + clipspaceLower
       vertices[i + 4] = x + clipspaceBinWidth
       vertices[i + 5] = y0
       
