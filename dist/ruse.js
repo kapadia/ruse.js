@@ -121,7 +121,6 @@
       shaders = this.constructor.Shaders;
       this.programs = {};
       this.programs["ruse"] = this._createProgram(this.gl, shaders.vertex, shaders.fragment);
-      this.programs["axes"] = this._createProgram(this.gl, shaders.vertex, shaders.fragment);
       this.pMatrix = mat4.create();
       this.mvMatrix = mat4.create();
       this.rotationMatrix = mat4.create();
@@ -132,12 +131,15 @@
       this.gl.viewport(0, 0, this.width, this.height);
       this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
       this.plotBuffer = this.gl.createBuffer();
-      this.axesBuffer = this.gl.createBuffer();
       this.margin = 0.02;
       this.lineWidth = 0.005;
       this.fontSize = 9;
       this.fontFamily = "Helvetica Neue";
       this.axisPadding = 4;
+      this.xTicks = 6;
+      this.yTicks = 6;
+      this.xTickSize = 4;
+      this.yTickSize = 4;
     }
 
     Ruse.prototype._canvas2clipspace = function(x, y) {
@@ -152,6 +154,17 @@
       x = this.width / 2 * (xp + 1);
       y = -this.height / 2 * (yp - 1);
       return [x, y];
+    };
+
+    Ruse.prototype._linspace = function(start, stop, num) {
+      var range, step, steps;
+      range = stop - start;
+      step = range / (num - 1);
+      steps = new Float32Array(num);
+      while (num--) {
+        steps[num] = start + num * step;
+      }
+      return steps;
     };
 
     Ruse.prototype.draw = function() {
@@ -191,7 +204,7 @@
     };
 
     Ruse.prototype._makeAxes = function(key1, key2) {
-      var context, i, key1width, key2width, lineWidth, lineWidthX, lineWidthY, margin, value, vertices, x, xp, y, yp, _i, _len, _ref, _ref1;
+      var context, i, key1width, key2width, lineWidth, lineWidthX, lineWidthY, margin, value, vertices, x, x1, x2, xTick, xTicks, xp, y, y1, y2, yTick, yTicks, yp, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3;
       context = this.axesCanvas.getContext('2d');
       context.imageSmoothingEnabled = false;
       context.lineWidth = 1;
@@ -216,10 +229,28 @@
       context.moveTo(vertices[4], vertices[5]);
       context.lineTo(vertices[6], vertices[7]);
       context.stroke();
+      _ref1 = this._clipspace2canvas(-1.0 + margin, -1.0 + margin), x1 = _ref1[0], y1 = _ref1[1];
+      _ref2 = this._clipspace2canvas(1.0 - margin, 1.0 - margin), x2 = _ref2[0], y2 = _ref2[1];
+      xTicks = this._linspace(x1, x2, this.xTicks + 1).subarray(1);
+      yTicks = this._linspace(y1, y2, this.yTicks + 1).subarray(1);
+      for (_j = 0, _len1 = xTicks.length; _j < _len1; _j++) {
+        xTick = xTicks[_j];
+        context.beginPath();
+        context.moveTo(xTick, y1);
+        context.lineTo(xTick, y1 - this.xTickSize);
+        context.stroke();
+      }
+      for (_k = 0, _len2 = yTicks.length; _k < _len2; _k++) {
+        yTick = yTicks[_k];
+        context.beginPath();
+        context.moveTo(x1 - 1, yTick);
+        context.lineTo(x1 - 1 + this.yTickSize, yTick);
+        context.stroke();
+      }
       context.font = "" + this.fontSize + "px " + this.fontFamily;
       key1width = context.measureText(key1).width;
       key2width = context.measureText(key2).width;
-      _ref1 = this._clipspace2canvas(1.0 - margin, -1.0 + margin), x = _ref1[0], y = _ref1[1];
+      _ref3 = this._clipspace2canvas(1.0 - margin, -1.0 + margin), x = _ref3[0], y = _ref3[1];
       x -= key1width;
       y += this.fontSize + 4;
       context.fillText("" + key1, x, y);

@@ -130,7 +130,7 @@ class Ruse
     shaders = @constructor.Shaders
     @programs = {}
     @programs["ruse"] = @_createProgram(@gl, shaders.vertex, shaders.fragment)
-    @programs["axes"] = @_createProgram(@gl, shaders.vertex, shaders.fragment)
+    # @programs["axes"] = @_createProgram(@gl, shaders.vertex, shaders.fragment)
     
     # Set up camera parameters
     @pMatrix = mat4.create()
@@ -148,7 +148,7 @@ class Ruse
     @gl.clear(@gl.COLOR_BUFFER_BIT | @gl.DEPTH_BUFFER_BIT)
     
     @plotBuffer = @gl.createBuffer()
-    @axesBuffer = @gl.createBuffer()
+    # @axesBuffer = @gl.createBuffer()
     
     # Plot parameters
     @margin = 0.02
@@ -156,6 +156,10 @@ class Ruse
     @fontSize = 9
     @fontFamily = "Helvetica Neue"
     @axisPadding = 4
+    @xTicks = 6
+    @yTicks = 6
+    @xTickSize = 4
+    @yTickSize = 4
     
     # @_setupMouseControls()
   
@@ -168,6 +172,16 @@ class Ruse
     x = @width / 2 * (xp + 1)
     y = -@height / 2 * (yp - 1)
     return [x, y]
+  
+  _linspace: (start, stop, num) ->
+    range = stop - start
+    step = range / (num - 1)
+    
+    steps = new Float32Array(num)
+    while num--
+      steps[num] = start + num * step
+      
+    return steps
   
   draw: ->
     mat4.identity(@mvMatrix)
@@ -268,6 +282,25 @@ class Ruse
     context.moveTo(vertices[4], vertices[5])
     context.lineTo(vertices[6], vertices[7])
     context.stroke()
+    
+    # Tick marks
+    [x1, y1] = @_clipspace2canvas(-1.0 + margin, -1.0 + margin)
+    [x2, y2] = @_clipspace2canvas(1.0 - margin, 1.0 - margin)
+    xTicks = @_linspace(x1, x2, @xTicks + 1).subarray(1)
+    yTicks = @_linspace(y1, y2, @yTicks + 1).subarray(1)
+    
+    for xTick in xTicks
+      context.beginPath()
+      context.moveTo(xTick, y1)
+      context.lineTo(xTick, y1 - @xTickSize)
+      context.stroke()
+    
+    for yTick in yTicks
+      context.beginPath()
+      context.moveTo(x1 - 1, yTick)
+      context.lineTo(x1 - 1 + @yTickSize, yTick)
+      context.stroke()
+    
     
     # Axes names
     context.font = "#{@fontSize}px #{@fontFamily}"
