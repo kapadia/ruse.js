@@ -222,7 +222,13 @@
       _ref1 = this._clipspace2canvas(1.0 - margin, -1.0 + margin), x = _ref1[0], y = _ref1[1];
       x -= key1width;
       y += this.fontSize + 4;
-      return context.fillText("" + key1, x, y);
+      context.fillText("" + key1, x, y);
+      context.save();
+      context.rotate(-Math.PI / 2);
+      x = -1 * (margin * this.height / 2 + key2width);
+      y = margin * this.width / 2 - this.fontSize;
+      context.fillText("" + key2, x, y);
+      return context.restore();
     };
 
     Ruse.prototype._scatter2D = function(data) {

@@ -279,15 +279,15 @@ class Ruse
     [x, y] = @_clipspace2canvas(1.0 - margin, -1.0 + margin)
     x -= key1width
     y += @fontSize + 4
-    
     context.fillText("#{key1}", x, y)
     
-    # context.save()
-    # [x, y] = @_clipspace2canvas(-1.0 - margin, 1.0 + margin)
-    # context.translate(@width / 2, @height / 2)
-    # context.rotate(-Math.PI / 2)
-    # context.fillText("#{key2}", 0, 0)
-    # context.restore()
+    # Measurements for y axis
+    context.save()
+    context.rotate(-Math.PI / 2)
+    x = -1 * (margin * @height / 2 + key2width)
+    y = margin * @width / 2 - @fontSize
+    context.fillText("#{key2}", x, y)
+    context.restore()
   
   _scatter2D: (data) ->
     
