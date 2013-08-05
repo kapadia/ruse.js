@@ -160,8 +160,8 @@ class Ruse
     
     # Plot style parameters
     @margin = 0.02
-    @lineWidth = 0.005
     @fontSize = 10
+    @tickFontSize = 9
     @fontFamily = "Helvetica"
     @axisPadding = 4
     @xTicks = 6
@@ -245,6 +245,7 @@ class Ruse
     yTicks = @linspace(y1, y2, @yTicks + 1).subarray(1)
     
     if @extents?
+      context.font = "#{@tickFontSize}px #{@fontFamily}"
       xTickValues = @linspace(@extents.xmin, @extents.xmax, @xTicks + 1).subarray(1)
       yTickValues = @linspace(@extents.ymin, @extents.ymax, @yTicks + 1).subarray(1)
     
@@ -273,29 +274,34 @@ class Ruse
         
         context.save()
         context.rotate(-Math.PI / 2)
-        context.fillText("#{value}", -1 * (yTick + textWidth), x1 - @fontSize)
+        
+        # NOTE: The 1 should really be line width
+        context.fillText("#{value}", -1 * (yTick + textWidth - 1), x1 - @fontSize)
         context.restore()
     
-    
+    context.font = "#{@fontSize}px #{@fontFamily}"
     key1width = context.measureText(@key1).width
     key2width = context.measureText(@key2).width
     
     # Measurements for x axis
     [x, y] = @xpyp2xy(1.0 - margin, -1.0 + margin)
     x -= key1width
-    y += 2 * @fontSize + 4
+    y += 2 * @fontSize + 8
     context.fillText("#{@key1}", x, y)
     
     # Measurements for y axis
     context.save()
     context.rotate(-Math.PI / 2)
     x = -1 * (margin * @height / 2 + key2width)
-    y = margin * @width / 2 - @fontSize
+    y = margin * @width / 2 - 2 * @fontSize - 8
     context.fillText("#{@key2}", x, y)
     context.restore()
     
   getMargin: ->
-    return @margin + (@fontSize + @axisPadding) * 2 / @height
+    # NOTE: 2 * fontSize incorporates both tick values and axes labels
+    # TODO: Better way to do accomplish this by computing margin for
+    #       when tick values and axes labels are requested.
+    return @margin + (2 * @fontSize + @axisPadding) * 2 / @height
     
   #
   # Transformation functions

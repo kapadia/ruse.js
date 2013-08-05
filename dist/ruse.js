@@ -140,8 +140,8 @@
       this.gl.depthFunc(this.gl.GEQUAL);
       this.plotBuffer = this.gl.createBuffer();
       this.margin = 0.02;
-      this.lineWidth = 0.005;
       this.fontSize = 10;
+      this.tickFontSize = 9;
       this.fontFamily = "Helvetica";
       this.axisPadding = 4;
       this.xTicks = 6;
@@ -197,6 +197,7 @@
       xTicks = this.linspace(x1, x2, this.xTicks + 1).subarray(1);
       yTicks = this.linspace(y1, y2, this.yTicks + 1).subarray(1);
       if (this.extents != null) {
+        context.font = "" + this.tickFontSize + "px " + this.fontFamily;
         xTickValues = this.linspace(this.extents.xmin, this.extents.xmax, this.xTicks + 1).subarray(1);
         yTickValues = this.linspace(this.extents.ymin, this.extents.ymax, this.yTicks + 1).subarray(1);
       }
@@ -223,26 +224,27 @@
           textWidth = context.measureText(value).width;
           context.save();
           context.rotate(-Math.PI / 2);
-          context.fillText("" + value, -1 * (yTick + textWidth), x1 - this.fontSize);
+          context.fillText("" + value, -1 * (yTick + textWidth - 1), x1 - this.fontSize);
           context.restore();
         }
       }
+      context.font = "" + this.fontSize + "px " + this.fontFamily;
       key1width = context.measureText(this.key1).width;
       key2width = context.measureText(this.key2).width;
       _ref3 = this.xpyp2xy(1.0 - margin, -1.0 + margin), x = _ref3[0], y = _ref3[1];
       x -= key1width;
-      y += 2 * this.fontSize + 4;
+      y += 2 * this.fontSize + 8;
       context.fillText("" + this.key1, x, y);
       context.save();
       context.rotate(-Math.PI / 2);
       x = -1 * (margin * this.height / 2 + key2width);
-      y = margin * this.width / 2 - this.fontSize;
+      y = margin * this.width / 2 - 2 * this.fontSize - 8;
       context.fillText("" + this.key2, x, y);
       return context.restore();
     };
 
     Ruse.prototype.getMargin = function() {
-      return this.margin + (this.fontSize + this.axisPadding) * 2 / this.height;
+      return this.margin + (2 * this.fontSize + this.axisPadding) * 2 / this.height;
     };
 
     Ruse.prototype.x2xp = function(x) {
