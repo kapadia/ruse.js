@@ -168,11 +168,13 @@ class Ruse
     @yTicks = 6
     @xTickSize = 4
     @yTickSize = 4
+    @tickDecimals = 3
     
     # Plot parameters
     @targetBinWidth = 1  # pixel units
     @bins = null
     @drawMode = null
+    @extents = null
     
     @_setupMouseControls()
   
@@ -192,6 +194,8 @@ class Ruse
     context = @axesCanvas.getContext('2d')
     context.imageSmoothingEnabled = false
     context.lineWidth = 1
+    context.font = "#{@fontSize}px #{@fontFamily}"
+    
     context.translate(@xOffset, @yOffset)
     
     lineWidth = context.lineWidth
@@ -234,26 +238,44 @@ class Ruse
     context.closePath()
     context.stroke()
     
-    # Tick marks
+    # Tick marks and numbers
     [x1, y1] = @xpyp2xy(-1.0 + margin, -1.0 + margin)
     [x2, y2] = @xpyp2xy(1.0 - margin, 1.0 - margin)
     xTicks = @linspace(x1, x2, @xTicks + 1).subarray(1)
     yTicks = @linspace(y1, y2, @yTicks + 1).subarray(1)
     
-    for xTick in xTicks
+    if @extents?
+      xTickValues = @linspace(@extents.xmin, @extents.xmax, @xTicks + 1).subarray(1)
+      yTickValues = @linspace(@extents.ymin, @extents.ymax, @yTicks + 1).subarray(1)
+    
+    for xTick, index in xTicks
       context.beginPath()
       context.moveTo(xTick, y1)
       context.lineTo(xTick, y1 - @xTickSize)
       context.stroke()
       
-    for yTick in yTicks
+      if xTickValues?
+        value = xTickValues[index].toFixed(@tickDecimals)
+        textWidth = context.measureText(value).width
+        
+        # NOTE: The 1 should really be line width
+        context.fillText("#{value}", xTick - textWidth + 1, y1 + @fontSize + 2)
+      
+    for yTick, index in yTicks
       context.beginPath()
       context.moveTo(x1 - 1, yTick)
       context.lineTo(x1 - 1 + @yTickSize, yTick)
       context.stroke()
       
-    # Axes names
-    context.font = "#{@fontSize}px #{@fontFamily}"
+      if yTickValues?
+        value = yTickValues[index].toFixed(@tickDecimals)
+        textWidth = context.measureText(value).width
+        
+        context.save()
+        context.rotate(-Math.PI / 2)
+        context.fillText("#{value}", -1 * (yTick + textWidth), x1 - @fontSize)
+        context.restore()
+    
     
     key1width = context.measureText(@key1).width
     key2width = context.measureText(@key2).width
@@ -261,7 +283,7 @@ class Ruse
     # Measurements for x axis
     [x, y] = @xpyp2xy(1.0 - margin, -1.0 + margin)
     x -= key1width
-    y += @fontSize + 4
+    y += 2 * @fontSize + 4
     context.fillText("#{@key1}", x, y)
     
     # Measurements for y axis
@@ -498,23 +520,20 @@ class Ruse
     @draw()
   
   scatter2D: (data) ->
-    
-    # Should be able to accept data in various formats
-    # e.g. [{key1: val1, key2: val2}, ...]
-    # two arrays
-    
     @gl.useProgram(@programs.ruse)
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @plotBuffer)
     
     # Compute margin that incorporates spaces needed for axes labels
     margin = @getMargin()
+    vertexSize = 2
     
     nVertices = data.length
-    vertices = new Float32Array(2 * nVertices)
+    vertices = new Float32Array(vertexSize * nVertices)
     
     [@key1, @key2] = Object.keys(data[0])
     
     # Get minimum and maximum for each column
+    # TODO: Refactor getExtent to iterate once over multiple equal-sized arrays
     i = nVertices
     min1 = max1 = data[i - 1][@key1]
     min2 = max2 = data[i - 1][@key2]
@@ -528,11 +547,18 @@ class Ruse
       min2 = val2 if val2 < min2
       max2 = val2 if val2 > max2
     
+    # Store computed extents for use when creating axes
+    @extents =
+      xmin: min1
+      xmax: max1
+      ymin: min2
+      ymax: max2
+    
     range1 = max1 - min1
     range2 = max2 - min2
     
     for datum, index in data
-      i = 2 * index
+      i = vertexSize * index
       val1 = datum[@key1]
       val2 = datum[@key2]
       
@@ -540,7 +566,7 @@ class Ruse
       vertices[i + 1] = 2 * (1 - margin) / range2 * (val2 - min2) - 1 + margin
     
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
-    @plotBuffer.itemSize = 2
+    @plotBuffer.itemSize = vertexSize
     @plotBuffer.numItems = nVertices
     
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @plotBuffer)

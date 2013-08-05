@@ -148,9 +148,11 @@
       this.yTicks = 6;
       this.xTickSize = 4;
       this.yTickSize = 4;
+      this.tickDecimals = 3;
       this.targetBinWidth = 1;
       this.bins = null;
       this.drawMode = null;
+      this.extents = null;
       this._setupMouseControls();
     }
 
@@ -160,11 +162,12 @@
     };
 
     Ruse.prototype.drawAxes = function() {
-      var context, i, key1width, key2width, lineWidth, lineWidthX, lineWidthY, margin, value, vertices, x, x1, x2, xTick, xTicks, xp, y, y1, y2, yTick, yTicks, yp, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3;
+      var context, i, index, key1width, key2width, lineWidth, lineWidthX, lineWidthY, margin, textWidth, value, vertices, x, x1, x2, xTick, xTickValues, xTicks, xp, y, y1, y2, yTick, yTickValues, yTicks, yp, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3;
       this.axesCanvas.width = this.axesCanvas.width;
       context = this.axesCanvas.getContext('2d');
       context.imageSmoothingEnabled = false;
       context.lineWidth = 1;
+      context.font = "" + this.fontSize + "px " + this.fontFamily;
       context.translate(this.xOffset, this.yOffset);
       lineWidth = context.lineWidth;
       lineWidthX = lineWidth * 2 / this.width;
@@ -193,26 +196,42 @@
       _ref2 = this.xpyp2xy(1.0 - margin, 1.0 - margin), x2 = _ref2[0], y2 = _ref2[1];
       xTicks = this.linspace(x1, x2, this.xTicks + 1).subarray(1);
       yTicks = this.linspace(y1, y2, this.yTicks + 1).subarray(1);
-      for (_j = 0, _len1 = xTicks.length; _j < _len1; _j++) {
-        xTick = xTicks[_j];
+      if (this.extents != null) {
+        xTickValues = this.linspace(this.extents.xmin, this.extents.xmax, this.xTicks + 1).subarray(1);
+        yTickValues = this.linspace(this.extents.ymin, this.extents.ymax, this.yTicks + 1).subarray(1);
+      }
+      for (index = _j = 0, _len1 = xTicks.length; _j < _len1; index = ++_j) {
+        xTick = xTicks[index];
         context.beginPath();
         context.moveTo(xTick, y1);
         context.lineTo(xTick, y1 - this.xTickSize);
         context.stroke();
+        if (xTickValues != null) {
+          value = xTickValues[index].toFixed(this.tickDecimals);
+          textWidth = context.measureText(value).width;
+          context.fillText("" + value, xTick - textWidth + 1, y1 + this.fontSize + 2);
+        }
       }
-      for (_k = 0, _len2 = yTicks.length; _k < _len2; _k++) {
-        yTick = yTicks[_k];
+      for (index = _k = 0, _len2 = yTicks.length; _k < _len2; index = ++_k) {
+        yTick = yTicks[index];
         context.beginPath();
         context.moveTo(x1 - 1, yTick);
         context.lineTo(x1 - 1 + this.yTickSize, yTick);
         context.stroke();
+        if (yTickValues != null) {
+          value = yTickValues[index].toFixed(this.tickDecimals);
+          textWidth = context.measureText(value).width;
+          context.save();
+          context.rotate(-Math.PI / 2);
+          context.fillText("" + value, -1 * (yTick + textWidth), x1 - this.fontSize);
+          context.restore();
+        }
       }
-      context.font = "" + this.fontSize + "px " + this.fontFamily;
       key1width = context.measureText(this.key1).width;
       key2width = context.measureText(this.key2).width;
       _ref3 = this.xpyp2xy(1.0 - margin, -1.0 + margin), x = _ref3[0], y = _ref3[1];
       x -= key1width;
-      y += this.fontSize + 4;
+      y += 2 * this.fontSize + 4;
       context.fillText("" + this.key1, x, y);
       context.save();
       context.rotate(-Math.PI / 2);
@@ -419,12 +438,13 @@
     };
 
     Ruse.prototype.scatter2D = function(data) {
-      var datum, i, index, margin, max1, max2, min1, min2, nVertices, range1, range2, val1, val2, vertices, _i, _len, _ref;
+      var datum, i, index, margin, max1, max2, min1, min2, nVertices, range1, range2, val1, val2, vertexSize, vertices, _i, _len, _ref;
       this.gl.useProgram(this.programs.ruse);
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.plotBuffer);
       margin = this.getMargin();
+      vertexSize = 2;
       nVertices = data.length;
-      vertices = new Float32Array(2 * nVertices);
+      vertices = new Float32Array(vertexSize * nVertices);
       _ref = Object.keys(data[0]), this.key1 = _ref[0], this.key2 = _ref[1];
       i = nVertices;
       min1 = max1 = data[i - 1][this.key1];
@@ -445,18 +465,24 @@
           max2 = val2;
         }
       }
+      this.extents = {
+        xmin: min1,
+        xmax: max1,
+        ymin: min2,
+        ymax: max2
+      };
       range1 = max1 - min1;
       range2 = max2 - min2;
       for (index = _i = 0, _len = data.length; _i < _len; index = ++_i) {
         datum = data[index];
-        i = 2 * index;
+        i = vertexSize * index;
         val1 = datum[this.key1];
         val2 = datum[this.key2];
         vertices[i] = 2 * (1 - margin) / range1 * (val1 - min1) - 1 + margin;
         vertices[i + 1] = 2 * (1 - margin) / range2 * (val2 - min2) - 1 + margin;
       }
       this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
-      this.plotBuffer.itemSize = 2;
+      this.plotBuffer.itemSize = vertexSize;
       this.plotBuffer.numItems = nVertices;
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.plotBuffer);
       this.gl.vertexAttribPointer(this.programs.ruse.vertexPositionAttribute, this.plotBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
