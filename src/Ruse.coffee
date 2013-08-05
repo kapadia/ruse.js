@@ -56,6 +56,8 @@ class Ruse
     @drag = false
     @xOldOffset = null
     @yOldOffset = null
+    @xOffset = 0
+    @yOffset = 0
     
     @axesCanvas.onmousedown = (e) =>
       @drag = true
@@ -74,16 +76,20 @@ class Ruse
       deltaX = x - @xOldOffset
       deltaY = y - @yOldOffset
       
-      rotationMatrix = mat4.create()
-      mat4.identity(rotationMatrix)
-      mat4.rotateY(rotationMatrix, rotationMatrix, @_toRadians(deltaX / 4))
-      mat4.rotateX(rotationMatrix, rotationMatrix, @_toRadians(deltaY / 4))
-      mat4.multiply(@rotationMatrix, rotationMatrix, @rotationMatrix)
+      delta = @_pixel2clipspace(deltaX, deltaY)
+      delta.push(0.0)
+      
+      mat4.translate(@mvMatrix, @mvMatrix, delta)
       
       @xOldOffset = x
       @yOldOffset = y
       
       @draw()
+      
+      # Update axes too!
+      @xOffset += deltaX
+      @yOffset += deltaY
+      @_makeAxes()
     
     @axesCanvas.onmouseout = (e) =>
       @drag = false
@@ -140,12 +146,16 @@ class Ruse
     mat4.perspective(45.0, @canvas.width / @canvas.height, 0.1, 100.0, @pMatrix)
     mat4.identity(@rotationMatrix)
     mat4.identity(@mvMatrix)
+    mat4.translate(@mvMatrix, @mvMatrix, [0.0, 0.0, 0.0])
     
     @_setMatrices(@programs.ruse)
     # @_setMatrices(@programs.axes)
     
     @gl.viewport(0, 0, @width, @height)
     @gl.clear(@gl.COLOR_BUFFER_BIT | @gl.DEPTH_BUFFER_BIT)
+    # @gl.enable(@gl.DEPTH_TEST)
+    @gl.clearDepth(-50.0)
+    @gl.depthFunc(@gl.GEQUAL)
     
     @plotBuffer = @gl.createBuffer()
     # @axesBuffer = @gl.createBuffer()
@@ -165,9 +175,14 @@ class Ruse
     @targetBinWidth = 1  # pixel units
     @bins = null
     
-    
-    # @_setupMouseControls()
+    @_setupMouseControls()
   
+  _pixel2clipspace: (x, y) ->
+    xp = 2 / @width * x
+    yp = -2 / @height * y
+    return [xp, yp]
+  
+  # These work for mapping canvas to pixel, but also need absolute mapping ...
   _canvas2clipspace: (x, y) ->
     xp = 2 / @width * x - 1
     yp = -2 / @height * y + 1
@@ -189,15 +204,8 @@ class Ruse
     return steps
   
   draw: ->
-    mat4.identity(@mvMatrix)
-    mat4.translate(@mvMatrix, @mvMatrix, [0.0, 0.0, 0.0])
-    mat4.multiply(@mvMatrix, @mvMatrix, @rotationMatrix)
-    mat4.translate(@mvMatrix, @mvMatrix, [-0.5, -0.5, -0.5])
-    
     @_setMatrices(@programs.ruse)
     @gl.drawArrays(@gl.POINTS, 0, @plotBuffer.numItems)
-    # @_setMatrices(@programs.axes)
-    # @gl.drawArrays(@gl.TRIANGLES, 0, @axesBuffer.numItems)
   
   getHistogram: (arr, min, max, bins) ->
     
@@ -319,8 +327,63 @@ class Ruse
     @gl.vertexAttribPointer(@programs.ruse.vertexPositionAttribute, @plotBuffer.itemSize, @gl.FLOAT, false, 0, 0)
     @gl.drawArrays(@gl.TRIANGLES, 0, @plotBuffer.numItems)
     
-  scatter3D: (args...) ->
+  scatter3D: (data) ->
     console.log 'scatter3D'
+    
+    @gl.useProgram(@programs.ruse)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @plotBuffer)
+    
+    # # Compute margin that incorporates spaces needed for axes labels
+    # margin = @_getMargin()
+    # 
+    # nVertices = data.length
+    # vertices = new Float32Array(3 * nVertices)
+    # 
+    # [key1, key2, key3] = Object.keys(data[0])
+    # 
+    # # Get minimum and maximum for each column
+    # # TODO: Refactor getExtent to iterate over array of objects
+    # i = nVertices
+    # min1 = max1 = data[i - 1][key1]
+    # min2 = max2 = data[i - 1][key2]
+    # min3 = max3 = data[i - 1][key3]
+    # while i--
+    #   val1 = data[i][key1]
+    #   val2 = data[i][key2]
+    #   val3 = data[i][key3]
+    #   
+    #   min1 = val1 if val1 < min1
+    #   max1 = val1 if val1 > max1
+    #   
+    #   min2 = val2 if val2 < min2
+    #   max2 = val2 if val2 > max2
+    #   
+    #   min3 = val3 if val3 < min3
+    #   max3 = val3 if val3 > max3
+    # 
+    # range1 = max1 - min1
+    # range2 = max2 - min2
+    # range3 = max3 - min3
+    # 
+    # for datum, index in data
+    #   i = 3 * index
+    #   val1 = datum[key1]
+    #   val2 = datum[key2]
+    #   val3 = datum[key3]
+    #   
+    #   vertices[i] = 2 * (1 - margin) / range1 * (val1 - min1) - 1 + margin
+    #   vertices[i + 1] = 2 * (1 - margin) / range2 * (val2 - min2) - 1 + margin
+    #   vertices[i + 3] = 2 * (1 - margin) / range3 * (val3 - min3) - 1 + margin
+    
+    nVertices = 1
+    vertices = new Float32Array([0.0, 0.0, 1.0])
+    @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
+    @plotBuffer.itemSize = 3
+    @plotBuffer.numItems = nVertices
+    
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @plotBuffer)
+    @gl.vertexAttribPointer(@programs.ruse.vertexPositionAttribute, @plotBuffer.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.drawArrays(@gl.TRIANGLES, 0, @plotBuffer.numItems)
   
   # Helper methods to check type
   isArray: (obj) ->
@@ -419,10 +482,13 @@ class Ruse
   _getMargin: ->
     return @margin + (@fontSize + @axisPadding) * 2 / @height
   
-  _makeAxes: (key1, key2) ->
+  _makeAxes: ->
+    @axesCanvas.width = @axesCanvas.width
+    
     context = @axesCanvas.getContext('2d')
     context.imageSmoothingEnabled = false
     context.lineWidth = 1
+    context.translate(@xOffset, @yOffset)
     
     lineWidth = context.lineWidth
     
@@ -483,21 +549,21 @@ class Ruse
     # Axes names
     context.font = "#{@fontSize}px #{@fontFamily}"
     
-    key1width = context.measureText(key1).width
-    key2width = context.measureText(key2).width
+    key1width = context.measureText(@key1).width
+    key2width = context.measureText(@key2).width
     
     # Measurements for x axis
     [x, y] = @_clipspace2canvas(1.0 - margin, -1.0 + margin)
     x -= key1width
     y += @fontSize + 4
-    context.fillText("#{key1}", x, y)
+    context.fillText("#{@key1}", x, y)
     
     # Measurements for y axis
     context.save()
     context.rotate(-Math.PI / 2)
     x = -1 * (margin * @height / 2 + key2width)
     y = margin * @width / 2 - @fontSize
-    context.fillText("#{key2}", x, y)
+    context.fillText("#{@key2}", x, y)
     context.restore()
   
   scatter2D: (data) ->
@@ -515,15 +581,15 @@ class Ruse
     nVertices = data.length
     vertices = new Float32Array(2 * nVertices)
     
-    [key1, key2] = Object.keys(data[0])
+    [@key1, @key2] = Object.keys(data[0])
     
     # Get minimum and maximum for each column
     i = nVertices
-    min1 = max1 = data[i - 1][key1]
-    min2 = max2 = data[i - 1][key2]
+    min1 = max1 = data[i - 1][@key1]
+    min2 = max2 = data[i - 1][@key2]
     while i--
-      val1 = data[i][key1]
-      val2 = data[i][key2]
+      val1 = data[i][@key1]
+      val2 = data[i][@key2]
       
       min1 = val1 if val1 < min1
       max1 = val1 if val1 > max1
@@ -536,8 +602,8 @@ class Ruse
     
     for datum, index in data
       i = 2 * index
-      val1 = datum[key1]
-      val2 = datum[key2]
+      val1 = datum[@key1]
+      val2 = datum[@key2]
       
       vertices[i] = 2 * (1 - margin) / range1 * (val1 - min1) - 1 + margin
       vertices[i + 1] = 2 * (1 - margin) / range2 * (val2 - min2) - 1 + margin
@@ -550,9 +616,7 @@ class Ruse
     @gl.vertexAttribPointer(@programs.ruse.vertexPositionAttribute, @plotBuffer.itemSize, @gl.FLOAT, false, 0, 0)
     @gl.drawArrays(@gl.POINTS, 0, @plotBuffer.numItems)
     
-    # TODO: Generalize this.
-    [key1, key2] = Object.keys( data[0] )
-    @_makeAxes(key1, key2)
+    @_makeAxes()
 
 
 @astro = {} unless @astro?

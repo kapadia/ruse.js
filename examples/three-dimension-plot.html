@@ -1,12 +1,12 @@
 <html>
 <head>
-  <title>Histogram Example</title>
+  <title>Three Dimensional Scatter Plot Example</title>
   <link rel="stylesheet" href="astrojs.css" type="text/css" charset="utf-8">
-  <style>
+  <!-- <style>
   canvas {
     border: 1px solid red;
   }
-  </style>
+  </style> -->
   <script type="text/javascript" src="lib/gl-matrix.js"></script>
   <script type="text/javascript" src="../dist/ruse.js"></script>
   
@@ -18,21 +18,23 @@
     
     // Pretend we already have a gl context running
     var el = document.querySelector("#ruse");
+    var ruse = new astro.Ruse(el, 800, 400);
     
-    // Initialize a ruse (aka plot) using an existing gl context
-    var ruse = new astro.Ruse(el, 500, 300);
-    var key = "RACEN";
+    var key1 = "CX";
+    var key2 = "CY";
+    var key3 = "CZ";
     
     new astro.FITS('data/plates-dr9.fits', function(f) {
       var table = f.getDataUnit();
       table.getRows(0, table.rows, function(rows) {
-        row = rows.map(function(d) {
+        rows = rows.map(function(d) {
           datum = {};
-          datum[key] = d[key];
+          datum[key1] = d[key1];
+          datum[key2] = d[key2];
+          datum[key3] = d[key3];
           return datum;
         });
-        
-        ruse.plot(row);
+        ruse.plot(rows);
       });
     });
     
@@ -43,8 +45,10 @@
 
 <body onload='main()'>
   <div class='content'>
-    <h3>One Dimension Plot</h3>
-    <div id="ruse"></div>
+    <h3>Three Dimension Plot</h3>
+    <div class='container'>
+      <canvas id="ruse"></canvas>
+    </div>
   </div>
 </body>
 </html>

@@ -56,6 +56,8 @@
       this.drag = false;
       this.xOldOffset = null;
       this.yOldOffset = null;
+      this.xOffset = 0;
+      this.yOffset = 0;
       this.axesCanvas.onmousedown = function(e) {
         _this.drag = true;
         _this.xOldOffset = e.clientX;
@@ -65,7 +67,7 @@
         return _this.drag = false;
       };
       this.axesCanvas.onmousemove = function(e) {
-        var deltaX, deltaY, rotationMatrix, x, y;
+        var delta, deltaX, deltaY, x, y;
         if (!_this.drag) {
           return;
         }
@@ -73,14 +75,15 @@
         y = e.clientY;
         deltaX = x - _this.xOldOffset;
         deltaY = y - _this.yOldOffset;
-        rotationMatrix = mat4.create();
-        mat4.identity(rotationMatrix);
-        mat4.rotateY(rotationMatrix, rotationMatrix, _this._toRadians(deltaX / 4));
-        mat4.rotateX(rotationMatrix, rotationMatrix, _this._toRadians(deltaY / 4));
-        mat4.multiply(_this.rotationMatrix, rotationMatrix, _this.rotationMatrix);
+        delta = _this._pixel2clipspace(deltaX, deltaY);
+        delta.push(0.0);
+        mat4.translate(_this.mvMatrix, _this.mvMatrix, delta);
         _this.xOldOffset = x;
         _this.yOldOffset = y;
-        return _this.draw();
+        _this.draw();
+        _this.xOffset += deltaX;
+        _this.yOffset += deltaY;
+        return _this._makeAxes();
       };
       this.axesCanvas.onmouseout = function(e) {
         return _this.drag = false;
@@ -128,9 +131,12 @@
       mat4.perspective(45.0, this.canvas.width / this.canvas.height, 0.1, 100.0, this.pMatrix);
       mat4.identity(this.rotationMatrix);
       mat4.identity(this.mvMatrix);
+      mat4.translate(this.mvMatrix, this.mvMatrix, [0.0, 0.0, 0.0]);
       this._setMatrices(this.programs.ruse);
       this.gl.viewport(0, 0, this.width, this.height);
       this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+      this.gl.clearDepth(-50.0);
+      this.gl.depthFunc(this.gl.GEQUAL);
       this.plotBuffer = this.gl.createBuffer();
       this.margin = 0.02;
       this.lineWidth = 0.005;
@@ -143,7 +149,15 @@
       this.yTickSize = 4;
       this.targetBinWidth = 1;
       this.bins = null;
+      this._setupMouseControls();
     }
+
+    Ruse.prototype._pixel2clipspace = function(x, y) {
+      var xp, yp;
+      xp = 2 / this.width * x;
+      yp = -2 / this.height * y;
+      return [xp, yp];
+    };
 
     Ruse.prototype._canvas2clipspace = function(x, y) {
       var xp, yp;
@@ -171,10 +185,6 @@
     };
 
     Ruse.prototype.draw = function() {
-      mat4.identity(this.mvMatrix);
-      mat4.translate(this.mvMatrix, this.mvMatrix, [0.0, 0.0, 0.0]);
-      mat4.multiply(this.mvMatrix, this.mvMatrix, this.rotationMatrix);
-      mat4.translate(this.mvMatrix, this.mvMatrix, [-0.5, -0.5, -0.5]);
       this._setMatrices(this.programs.ruse);
       return this.gl.drawArrays(this.gl.POINTS, 0, this.plotBuffer.numItems);
     };
@@ -272,10 +282,19 @@
       return this.gl.drawArrays(this.gl.TRIANGLES, 0, this.plotBuffer.numItems);
     };
 
-    Ruse.prototype.scatter3D = function() {
-      var args;
-      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      return console.log('scatter3D');
+    Ruse.prototype.scatter3D = function(data) {
+      var nVertices, vertices;
+      console.log('scatter3D');
+      this.gl.useProgram(this.programs.ruse);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.plotBuffer);
+      nVertices = 1;
+      vertices = new Float32Array([0.0, 0.0, 1.0]);
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
+      this.plotBuffer.itemSize = 3;
+      this.plotBuffer.numItems = nVertices;
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.plotBuffer);
+      this.gl.vertexAttribPointer(this.programs.ruse.vertexPositionAttribute, this.plotBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
+      return this.gl.drawArrays(this.gl.TRIANGLES, 0, this.plotBuffer.numItems);
     };
 
     Ruse.prototype.isArray = function(obj) {
@@ -356,11 +375,13 @@
       return this.margin + (this.fontSize + this.axisPadding) * 2 / this.height;
     };
 
-    Ruse.prototype._makeAxes = function(key1, key2) {
+    Ruse.prototype._makeAxes = function() {
       var context, i, key1width, key2width, lineWidth, lineWidthX, lineWidthY, margin, value, vertices, x, x1, x2, xTick, xTicks, xp, y, y1, y2, yTick, yTicks, yp, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3;
+      this.axesCanvas.width = this.axesCanvas.width;
       context = this.axesCanvas.getContext('2d');
       context.imageSmoothingEnabled = false;
       context.lineWidth = 1;
+      context.translate(this.xOffset, this.yOffset);
       lineWidth = context.lineWidth;
       lineWidthX = lineWidth * 2 / this.width;
       lineWidthY = lineWidth * 2 / this.height;
@@ -401,34 +422,34 @@
         context.stroke();
       }
       context.font = "" + this.fontSize + "px " + this.fontFamily;
-      key1width = context.measureText(key1).width;
-      key2width = context.measureText(key2).width;
+      key1width = context.measureText(this.key1).width;
+      key2width = context.measureText(this.key2).width;
       _ref3 = this._clipspace2canvas(1.0 - margin, -1.0 + margin), x = _ref3[0], y = _ref3[1];
       x -= key1width;
       y += this.fontSize + 4;
-      context.fillText("" + key1, x, y);
+      context.fillText("" + this.key1, x, y);
       context.save();
       context.rotate(-Math.PI / 2);
       x = -1 * (margin * this.height / 2 + key2width);
       y = margin * this.width / 2 - this.fontSize;
-      context.fillText("" + key2, x, y);
+      context.fillText("" + this.key2, x, y);
       return context.restore();
     };
 
     Ruse.prototype.scatter2D = function(data) {
-      var datum, i, index, key1, key2, margin, max1, max2, min1, min2, nVertices, range1, range2, val1, val2, vertices, _i, _len, _ref, _ref1;
+      var datum, i, index, margin, max1, max2, min1, min2, nVertices, range1, range2, val1, val2, vertices, _i, _len, _ref;
       this.gl.useProgram(this.programs.ruse);
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.plotBuffer);
       margin = this._getMargin();
       nVertices = data.length;
       vertices = new Float32Array(2 * nVertices);
-      _ref = Object.keys(data[0]), key1 = _ref[0], key2 = _ref[1];
+      _ref = Object.keys(data[0]), this.key1 = _ref[0], this.key2 = _ref[1];
       i = nVertices;
-      min1 = max1 = data[i - 1][key1];
-      min2 = max2 = data[i - 1][key2];
+      min1 = max1 = data[i - 1][this.key1];
+      min2 = max2 = data[i - 1][this.key2];
       while (i--) {
-        val1 = data[i][key1];
-        val2 = data[i][key2];
+        val1 = data[i][this.key1];
+        val2 = data[i][this.key2];
         if (val1 < min1) {
           min1 = val1;
         }
@@ -447,8 +468,8 @@
       for (index = _i = 0, _len = data.length; _i < _len; index = ++_i) {
         datum = data[index];
         i = 2 * index;
-        val1 = datum[key1];
-        val2 = datum[key2];
+        val1 = datum[this.key1];
+        val2 = datum[this.key2];
         vertices[i] = 2 * (1 - margin) / range1 * (val1 - min1) - 1 + margin;
         vertices[i + 1] = 2 * (1 - margin) / range2 * (val2 - min2) - 1 + margin;
       }
@@ -458,8 +479,7 @@
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.plotBuffer);
       this.gl.vertexAttribPointer(this.programs.ruse.vertexPositionAttribute, this.plotBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
       this.gl.drawArrays(this.gl.POINTS, 0, this.plotBuffer.numItems);
-      _ref1 = Object.keys(data[0]), key1 = _ref1[0], key2 = _ref1[1];
-      return this._makeAxes(key1, key2);
+      return this._makeAxes();
     };
 
     return Ruse;
