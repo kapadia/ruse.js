@@ -32,13 +32,26 @@
     new astro.FITS('data/plates-dr9.fits', function(f) {
       var table = f.getDataUnit();
       table.getRows(0, table.rows, function(rows) {
-        rows = rows.map(function(d) {
+        data = rows.map(function(d) {
           datum = {};
           datum[key1] = d[key1];
           datum[key2] = d[key2];
           return datum;
         });
-        ruse.plot(rows);
+        
+        data2 = rows.map(function(d) {
+          datum = {};
+          datum['N_GALAXY'] = d['N_GALAXY'];
+          datum['N_STAR'] = d['N_STAR'];
+          return datum;
+        });
+        
+        ruse.plot(data);
+        
+        setTimeout(function() {
+          ruse.plot(data2)
+        }, 5000);
+        window.ruse = ruse;
       });
     });
     

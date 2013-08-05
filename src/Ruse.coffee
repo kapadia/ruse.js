@@ -76,9 +76,10 @@ class Ruse
       deltaX = x - @xOldOffset
       deltaY = y - @yOldOffset
       
-      delta = @_pixel2clipspace(deltaX, deltaY)
-      delta.push(0.0)
+      deltaXP = @x2xp(deltaX)
+      deltaYP = @y2yp(deltaY)
       
+      delta = [deltaXP, deltaYP, 0.0]
       mat4.translate(@mvMatrix, @mvMatrix, delta)
       
       @xOldOffset = x
@@ -89,13 +90,14 @@ class Ruse
       # Update axes too!
       @xOffset += deltaX
       @yOffset += deltaY
-      @_makeAxes()
+      @drawAxes()
     
     @axesCanvas.onmouseout = (e) =>
       @drag = false
     
     @axesCanvas.onmouseover = (e) =>
       @drag = false
+  
   
   constructor: (arg, width, height) ->
     
@@ -149,16 +151,13 @@ class Ruse
     mat4.translate(@mvMatrix, @mvMatrix, [0.0, 0.0, 0.0])
     
     @_setMatrices(@programs.ruse)
-    # @_setMatrices(@programs.axes)
     
     @gl.viewport(0, 0, @width, @height)
     @gl.clear(@gl.COLOR_BUFFER_BIT | @gl.DEPTH_BUFFER_BIT)
-    # @gl.enable(@gl.DEPTH_TEST)
     @gl.clearDepth(-50.0)
     @gl.depthFunc(@gl.GEQUAL)
     
     @plotBuffer = @gl.createBuffer()
-    # @axesBuffer = @gl.createBuffer()
     
     # Plot style parameters
     @margin = 0.02
@@ -174,26 +173,59 @@ class Ruse
     # Plot parameters
     @targetBinWidth = 1  # pixel units
     @bins = null
+    @drawMode = null
     
     @_setupMouseControls()
   
-  _pixel2clipspace: (x, y) ->
-    xp = 2 / @width * x
-    yp = -2 / @height * y
-    return [xp, yp]
+  #
+  # Draw functions
+  #
   
-  # These work for mapping canvas to pixel, but also need absolute mapping ...
-  _canvas2clipspace: (x, y) ->
+  draw: ->
+    @_setMatrices(@programs.ruse)
+    @gl.drawArrays(@drawMode, 0, @plotBuffer.numItems)
+  
+  #
+  # Transformation functions
+  #
+  
+  # Denoting primed coordinates as clip space (e.g. xp and yp)
+  
+  # Pixel units to clip space units
+  x2xp: (x) ->
+    return 2 / @width * x
+  y2yp: (y) ->
+    return -2 / @height * y
+  
+  # Clip space units to pixel units
+  xp2x: (xp) ->
+    return xp * @width / 2
+  yp2y: (yp) ->
+    return yp * @height / 2
+  
+  # Pixel coordinates to clip space coordinates
+  xy2xpyp: (x, y) ->
     xp = 2 / @width * x - 1
     yp = -2 / @height * y + 1
     return [xp, yp]
   
-  _clipspace2canvas: (xp, yp) ->
+  # Clip space coordinates to pixel coordinates
+  xpyp2xy: (xp, yp) ->
     x = @width / 2 * (xp + 1)
     y = -@height / 2 * (yp - 1)
     return [x, y]
   
-  _linspace: (start, stop, num) ->
+  # Helper methods to check type
+  isArray: (obj) ->
+    type = Object.prototype.toString.call(obj)
+    return if type.indexOf('Array') > -1 then true else false
+    
+  isObject: (obj) ->
+    type = Object.prototype.toString.call(obj)
+    return if type.indexOf('Object') > -1 then true else false
+  
+  # Divide range into equal intervals
+  linspace: (start, stop, num) ->
     range = stop - start
     step = range / (num - 1)
     
@@ -203,26 +235,7 @@ class Ruse
       
     return steps
   
-  draw: ->
-    @_setMatrices(@programs.ruse)
-    @gl.drawArrays(@gl.POINTS, 0, @plotBuffer.numItems)
-  
-  getHistogram: (arr, min, max, bins) ->
-    
-    range = max - min
-    
-    h = new Uint32Array(bins)
-    dx = range / bins
-    
-    i = arr.length
-    while i--
-      value = arr[i]
-      index = ~~( (value - min) / dx )
-      h[index] += 1
-      
-    h.dx = dx
-    return h
-  
+  # Compute the minimum and maximum value of an array with support for NaN values.
   getExtent: (arr) ->
     
     # Set initial values for min and max
@@ -249,9 +262,25 @@ class Ruse
         
     return [min, max]
   
+  # Compute a histogram
+  getHistogram: (arr, min, max, bins) ->
+    
+    range = max - min
+    
+    h = new Uint32Array(bins)
+    dx = range / bins
+    
+    i = arr.length
+    while i--
+      value = arr[i]
+      index = ~~( (value - min) / dx )
+      h[index] += 1
+      
+    h.dx = dx
+    return h
+  
+  # Draw a histogram.
   histogram: (data) ->
-    # TODO: Compute histogram and draw a bunch of triangles
-    console.log 'histogram'
     
     # Data may be formated as an array of one dimensional objects
     # or an array of values
@@ -264,8 +293,9 @@ class Ruse
       # Parse values from array of objects
       data = data.map( (d) -> d[key] )
     
-    # TODO: Determine a bin size based on the extent and size of canvas
-    #       e.g. each bin should be greater than 1 pixel in width.  Go for 16 px wide.
+    #
+    # Determine a bin size based on the extent, size of canvas, and target pixel bin width.
+    #
     
     # Get the min and max
     [min, max] = @getExtent(data)
@@ -274,7 +304,7 @@ class Ruse
     unless @bins
       
       # Get width of drawing area
-      width = @width - @_getMargin() * @width
+      width = @width - @getMargin() * @width
       
       # Get number of bins able to fit in plot given a target bin width
       @bins = Math.floor(width / @targetBinWidth)
@@ -283,7 +313,7 @@ class Ruse
     h = @getHistogram(data, min, max, @bins)
     
     # Generate vertices describing histogram
-    margin = @_getMargin()
+    margin = @getMargin()
     clipspaceSize = 2.0 - 2 * margin
     
     clipspaceLower = -1.0 + margin
@@ -325,74 +355,9 @@ class Ruse
     @plotBuffer.numItems = nVertices
     
     @gl.vertexAttribPointer(@programs.ruse.vertexPositionAttribute, @plotBuffer.itemSize, @gl.FLOAT, false, 0, 0)
-    @gl.drawArrays(@gl.TRIANGLES, 0, @plotBuffer.numItems)
     
-  scatter3D: (data) ->
-    console.log 'scatter3D'
-    
-    @gl.useProgram(@programs.ruse)
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @plotBuffer)
-    
-    # # Compute margin that incorporates spaces needed for axes labels
-    # margin = @_getMargin()
-    # 
-    # nVertices = data.length
-    # vertices = new Float32Array(3 * nVertices)
-    # 
-    # [key1, key2, key3] = Object.keys(data[0])
-    # 
-    # # Get minimum and maximum for each column
-    # # TODO: Refactor getExtent to iterate over array of objects
-    # i = nVertices
-    # min1 = max1 = data[i - 1][key1]
-    # min2 = max2 = data[i - 1][key2]
-    # min3 = max3 = data[i - 1][key3]
-    # while i--
-    #   val1 = data[i][key1]
-    #   val2 = data[i][key2]
-    #   val3 = data[i][key3]
-    #   
-    #   min1 = val1 if val1 < min1
-    #   max1 = val1 if val1 > max1
-    #   
-    #   min2 = val2 if val2 < min2
-    #   max2 = val2 if val2 > max2
-    #   
-    #   min3 = val3 if val3 < min3
-    #   max3 = val3 if val3 > max3
-    # 
-    # range1 = max1 - min1
-    # range2 = max2 - min2
-    # range3 = max3 - min3
-    # 
-    # for datum, index in data
-    #   i = 3 * index
-    #   val1 = datum[key1]
-    #   val2 = datum[key2]
-    #   val3 = datum[key3]
-    #   
-    #   vertices[i] = 2 * (1 - margin) / range1 * (val1 - min1) - 1 + margin
-    #   vertices[i + 1] = 2 * (1 - margin) / range2 * (val2 - min2) - 1 + margin
-    #   vertices[i + 3] = 2 * (1 - margin) / range3 * (val3 - min3) - 1 + margin
-    
-    nVertices = 1
-    vertices = new Float32Array([0.0, 0.0, 1.0])
-    @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
-    @plotBuffer.itemSize = 3
-    @plotBuffer.numItems = nVertices
-    
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @plotBuffer)
-    @gl.vertexAttribPointer(@programs.ruse.vertexPositionAttribute, @plotBuffer.itemSize, @gl.FLOAT, false, 0, 0)
-    @gl.drawArrays(@gl.TRIANGLES, 0, @plotBuffer.numItems)
-  
-  # Helper methods to check type
-  isArray: (obj) ->
-    type = Object.prototype.toString.call(obj)
-    return if type.indexOf('Array') > -1 then true else false
-    
-  isObject: (obj) ->
-    type = Object.prototype.toString.call(obj)
-    return if type.indexOf('Object') > -1 then true else false
+    @drawMode = @gl.TRIANGLES
+    @draw()
   
   # Generic call to plot data
   # this function determines the dimensionality of the 
@@ -442,49 +407,14 @@ class Ruse
     # If code gets here, then something wrong with input data
     throw "Input data not recognized by Ruse."
   
-  _makeAxesGl: (key1, key2) ->
-    margin = @margin
-    lineWidth = @lineWidth
-    
-    @gl.useProgram(@programs.axes)
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @axesBuffer)
-    
-    nVertices = 12
-    vertices = new Float32Array([
-      
-      # y axis
-      -1.0 + @margin, 1.0,
-      -1.0 + @margin - lineWidth, 1.0,
-      -1.0 + @margin - lineWidth, -1.0,
-      
-      -1.0 + @margin - lineWidth, -1.0,
-      -1.0 + @margin, -1.0,
-      -1.0 + @margin, 1.0,
-      
-      # x axis
-      -1.0, -1.0 + @margin,
-      1.0, -1.0 + @margin,
-      -1.0, -1.0 + @margin - lineWidth,
-      
-      -1.0, -1.0 + @margin - lineWidth,
-      1.0, -1.0 + @margin - lineWidth,
-      1.0, -1.0 + @margin
-    ])
-    
-    @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
-    @axesBuffer.itemSize = 2
-    @axesBuffer.numItems = nVertices
-    
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @axesBuffer)
-    @gl.vertexAttribPointer(@programs.axes.vertexPositionAttribute, @axesBuffer.itemSize, @gl.FLOAT, false, 0, 0)
-    @gl.drawArrays(@gl.TRIANGLES, 0, @axesBuffer.numItems)
-  
-  _getMargin: ->
+  getMargin: ->
     return @margin + (@fontSize + @axisPadding) * 2 / @height
   
-  _makeAxes: ->
+  drawAxes: ->
+    # Clear the axes canvas
     @axesCanvas.width = @axesCanvas.width
     
+    # TODO: Check FPS, might be worth caching context and creating a setup function
     context = @axesCanvas.getContext('2d')
     context.imageSmoothingEnabled = false
     context.lineWidth = 1
@@ -496,7 +426,7 @@ class Ruse
     lineWidthX = lineWidth * 2 / @width
     lineWidthY = lineWidth * 2 / @height
     
-    margin = @_getMargin()
+    margin = @getMargin()
     
     # Determine axes given margin and line width
     vertices = new Float32Array([
@@ -514,25 +444,27 @@ class Ruse
       xp = vertices[i]
       yp = vertices[i + 1]
       
-      [x, y] = @_clipspace2canvas(xp, yp)
+      [x, y] = @xpyp2xy(xp, yp)
       vertices[i] = x
       vertices[i + 1] = y
     
     context.beginPath()
     context.moveTo(vertices[0], vertices[1])
     context.lineTo(vertices[2], vertices[3])
+    context.closePath()
     context.stroke()
     
     context.beginPath()
     context.moveTo(vertices[4], vertices[5])
     context.lineTo(vertices[6], vertices[7])
+    context.closePath()
     context.stroke()
     
     # Tick marks
-    [x1, y1] = @_clipspace2canvas(-1.0 + margin, -1.0 + margin)
-    [x2, y2] = @_clipspace2canvas(1.0 - margin, 1.0 - margin)
-    xTicks = @_linspace(x1, x2, @xTicks + 1).subarray(1)
-    yTicks = @_linspace(y1, y2, @yTicks + 1).subarray(1)
+    [x1, y1] = @xpyp2xy(-1.0 + margin, -1.0 + margin)
+    [x2, y2] = @xpyp2xy(1.0 - margin, 1.0 - margin)
+    xTicks = @linspace(x1, x2, @xTicks + 1).subarray(1)
+    yTicks = @linspace(y1, y2, @yTicks + 1).subarray(1)
     
     for xTick in xTicks
       context.beginPath()
@@ -553,7 +485,7 @@ class Ruse
     key2width = context.measureText(@key2).width
     
     # Measurements for x axis
-    [x, y] = @_clipspace2canvas(1.0 - margin, -1.0 + margin)
+    [x, y] = @xpyp2xy(1.0 - margin, -1.0 + margin)
     x -= key1width
     y += @fontSize + 4
     context.fillText("#{@key1}", x, y)
@@ -576,7 +508,7 @@ class Ruse
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @plotBuffer)
     
     # Compute margin that incorporates spaces needed for axes labels
-    margin = @_getMargin()
+    margin = @getMargin()
     
     nVertices = data.length
     vertices = new Float32Array(2 * nVertices)
@@ -614,9 +546,71 @@ class Ruse
     
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @plotBuffer)
     @gl.vertexAttribPointer(@programs.ruse.vertexPositionAttribute, @plotBuffer.itemSize, @gl.FLOAT, false, 0, 0)
-    @gl.drawArrays(@gl.POINTS, 0, @plotBuffer.numItems)
     
-    @_makeAxes()
+    @drawMode = @gl.POINTS
+    @draw()
+    @drawAxes()
+    
+  scatter3D: (data) ->
+    throw "scatter3D not yet implemented"
+    
+    @gl.useProgram(@programs.ruse)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @plotBuffer)
+    
+    # # Compute margin that incorporates spaces needed for axes labels
+    # margin = @getMargin()
+    # 
+    # nVertices = data.length
+    # vertices = new Float32Array(3 * nVertices)
+    # 
+    # [key1, key2, key3] = Object.keys(data[0])
+    # 
+    # # Get minimum and maximum for each column
+    # # TODO: Refactor getExtent to iterate over array of objects
+    # i = nVertices
+    # min1 = max1 = data[i - 1][key1]
+    # min2 = max2 = data[i - 1][key2]
+    # min3 = max3 = data[i - 1][key3]
+    # while i--
+    #   val1 = data[i][key1]
+    #   val2 = data[i][key2]
+    #   val3 = data[i][key3]
+    #   
+    #   min1 = val1 if val1 < min1
+    #   max1 = val1 if val1 > max1
+    #   
+    #   min2 = val2 if val2 < min2
+    #   max2 = val2 if val2 > max2
+    #   
+    #   min3 = val3 if val3 < min3
+    #   max3 = val3 if val3 > max3
+    # 
+    # range1 = max1 - min1
+    # range2 = max2 - min2
+    # range3 = max3 - min3
+    # 
+    # for datum, index in data
+    #   i = 3 * index
+    #   val1 = datum[key1]
+    #   val2 = datum[key2]
+    #   val3 = datum[key3]
+    #   
+    #   vertices[i] = 2 * (1 - margin) / range1 * (val1 - min1) - 1 + margin
+    #   vertices[i + 1] = 2 * (1 - margin) / range2 * (val2 - min2) - 1 + margin
+    #   vertices[i + 3] = 2 * (1 - margin) / range3 * (val3 - min3) - 1 + margin
+    
+    nVertices = 1
+    vertices = new Float32Array([0.0, 0.0, 1.0])
+    @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
+    @plotBuffer.itemSize = 3
+    @plotBuffer.numItems = nVertices
+    
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @plotBuffer)
+    @gl.vertexAttribPointer(@programs.ruse.vertexPositionAttribute, @plotBuffer.itemSize, @gl.FLOAT, false, 0, 0)
+    
+    @drawMode = @gl.POINTS
+    @draw()
+    @drawAxes()
 
 
 @astro = {} unless @astro?
