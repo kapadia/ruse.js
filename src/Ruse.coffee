@@ -138,7 +138,6 @@ class Ruse
     shaders = @constructor.Shaders
     @programs = {}
     @programs["ruse"] = @_createProgram(@gl, shaders.vertex, shaders.fragment)
-    # @programs["axes"] = @_createProgram(@gl, shaders.vertex, shaders.fragment)
     
     # Set up camera parameters
     @pMatrix = mat4.create()
@@ -185,6 +184,97 @@ class Ruse
     @_setMatrices(@programs.ruse)
     @gl.drawArrays(@drawMode, 0, @plotBuffer.numItems)
   
+  drawAxes: ->
+    # Clear the axes canvas
+    @axesCanvas.width = @axesCanvas.width
+    
+    # TODO: Check FPS, might be worth caching context and creating a setup function
+    context = @axesCanvas.getContext('2d')
+    context.imageSmoothingEnabled = false
+    context.lineWidth = 1
+    context.translate(@xOffset, @yOffset)
+    
+    lineWidth = context.lineWidth
+    
+    # Convert canvas pixel units to clipspace units
+    lineWidthX = lineWidth * 2 / @width
+    lineWidthY = lineWidth * 2 / @height
+    
+    margin = @getMargin()
+    
+    # Determine axes given margin and line width
+    vertices = new Float32Array([
+      # y axis
+      -1.0 + margin - lineWidthX, 1.0,
+      -1.0 + margin - lineWidthX, -1.0,
+      
+      # x axis
+      -1.0, -1.0 + margin - lineWidthY,
+      1.0, -1.0 + margin - lineWidthY
+    ])
+    
+    # Transform to canvas coordinates
+    for value, i in vertices by 2
+      xp = vertices[i]
+      yp = vertices[i + 1]
+      
+      [x, y] = @xpyp2xy(xp, yp)
+      vertices[i] = x
+      vertices[i + 1] = y
+      
+    context.beginPath()
+    context.moveTo(vertices[0], vertices[1])
+    context.lineTo(vertices[2], vertices[3])
+    context.closePath()
+    context.stroke()
+    
+    context.beginPath()
+    context.moveTo(vertices[4], vertices[5])
+    context.lineTo(vertices[6], vertices[7])
+    context.closePath()
+    context.stroke()
+    
+    # Tick marks
+    [x1, y1] = @xpyp2xy(-1.0 + margin, -1.0 + margin)
+    [x2, y2] = @xpyp2xy(1.0 - margin, 1.0 - margin)
+    xTicks = @linspace(x1, x2, @xTicks + 1).subarray(1)
+    yTicks = @linspace(y1, y2, @yTicks + 1).subarray(1)
+    
+    for xTick in xTicks
+      context.beginPath()
+      context.moveTo(xTick, y1)
+      context.lineTo(xTick, y1 - @xTickSize)
+      context.stroke()
+      
+    for yTick in yTicks
+      context.beginPath()
+      context.moveTo(x1 - 1, yTick)
+      context.lineTo(x1 - 1 + @yTickSize, yTick)
+      context.stroke()
+      
+    # Axes names
+    context.font = "#{@fontSize}px #{@fontFamily}"
+    
+    key1width = context.measureText(@key1).width
+    key2width = context.measureText(@key2).width
+    
+    # Measurements for x axis
+    [x, y] = @xpyp2xy(1.0 - margin, -1.0 + margin)
+    x -= key1width
+    y += @fontSize + 4
+    context.fillText("#{@key1}", x, y)
+    
+    # Measurements for y axis
+    context.save()
+    context.rotate(-Math.PI / 2)
+    x = -1 * (margin * @height / 2 + key2width)
+    y = margin * @width / 2 - @fontSize
+    context.fillText("#{@key2}", x, y)
+    context.restore()
+    
+  getMargin: ->
+    return @margin + (@fontSize + @axisPadding) * 2 / @height
+    
   #
   # Transformation functions
   #
@@ -279,6 +369,54 @@ class Ruse
     h.dx = dx
     return h
   
+  # Generic call to plot data
+  # this function determines the dimensionality of the 
+  # data, calling the appropriate function.
+  plot: (args...) ->
+    
+    if args.length is 1
+      arg = args[0]
+      
+      # Check type of argument
+      if @isArray(arg)
+        
+        # Check first element
+        datum = arg[0]
+        if @isObject(datum)
+          
+          # Check dimensionality
+          keys = Object.keys(datum)
+          dimensions = keys.length
+          
+          switch dimensions
+            when 1
+              @histogram(arg)
+              return
+            when 2
+              @scatter2D(arg)
+              return
+            when 3
+              @scatter3D(arg)
+              return
+        else
+          # Assuming an array of values
+          @histogram(arg)
+          return
+          
+    # Length of arguments is greater than one
+    # assume one numerical array per dimension
+    
+    switch args.length
+      when 2
+        @scatter2D(args...)
+        return
+      when 3
+        @scatter3D(args...)
+        return
+        
+    # If code gets here, then something wrong with input data
+    throw "Input data not recognized by Ruse."
+  
   # Draw a histogram.
   histogram: (data) ->
     
@@ -358,145 +496,6 @@ class Ruse
     
     @drawMode = @gl.TRIANGLES
     @draw()
-  
-  # Generic call to plot data
-  # this function determines the dimensionality of the 
-  # data, calling the appropriate function.
-  plot: (args...) ->
-    
-    if args.length is 1
-      arg = args[0]
-      
-      # Check type of argument
-      if @isArray(arg)
-        
-        # Check first element
-        datum = arg[0]
-        if @isObject(datum)
-          
-          # Check dimensionality
-          keys = Object.keys(datum)
-          dimensions = keys.length
-          
-          switch dimensions
-            when 1
-              @histogram(arg)
-              return
-            when 2
-              @scatter2D(arg)
-              return
-            when 3
-              @scatter3D(arg)
-              return
-        else
-          # Assuming an array of values
-          @histogram(arg)
-          return
-    
-    # Length of arguments is greater than one
-    # assume one numerical array per dimension
-    
-    switch args.length
-      when 2
-        @scatter2D(args...)
-        return
-      when 3
-        @scatter3D(args...)
-        return
-    
-    # If code gets here, then something wrong with input data
-    throw "Input data not recognized by Ruse."
-  
-  getMargin: ->
-    return @margin + (@fontSize + @axisPadding) * 2 / @height
-  
-  drawAxes: ->
-    # Clear the axes canvas
-    @axesCanvas.width = @axesCanvas.width
-    
-    # TODO: Check FPS, might be worth caching context and creating a setup function
-    context = @axesCanvas.getContext('2d')
-    context.imageSmoothingEnabled = false
-    context.lineWidth = 1
-    context.translate(@xOffset, @yOffset)
-    
-    lineWidth = context.lineWidth
-    
-    # Convert canvas pixel units to clipspace units
-    lineWidthX = lineWidth * 2 / @width
-    lineWidthY = lineWidth * 2 / @height
-    
-    margin = @getMargin()
-    
-    # Determine axes given margin and line width
-    vertices = new Float32Array([
-      # y axis
-      -1.0 + margin - lineWidthX, 1.0,
-      -1.0 + margin - lineWidthX, -1.0,
-      
-      # x axis
-      -1.0, -1.0 + margin - lineWidthY,
-      1.0, -1.0 + margin - lineWidthY
-    ])
-    
-    # Transform to canvas coordinates
-    for value, i in vertices by 2
-      xp = vertices[i]
-      yp = vertices[i + 1]
-      
-      [x, y] = @xpyp2xy(xp, yp)
-      vertices[i] = x
-      vertices[i + 1] = y
-    
-    context.beginPath()
-    context.moveTo(vertices[0], vertices[1])
-    context.lineTo(vertices[2], vertices[3])
-    context.closePath()
-    context.stroke()
-    
-    context.beginPath()
-    context.moveTo(vertices[4], vertices[5])
-    context.lineTo(vertices[6], vertices[7])
-    context.closePath()
-    context.stroke()
-    
-    # Tick marks
-    [x1, y1] = @xpyp2xy(-1.0 + margin, -1.0 + margin)
-    [x2, y2] = @xpyp2xy(1.0 - margin, 1.0 - margin)
-    xTicks = @linspace(x1, x2, @xTicks + 1).subarray(1)
-    yTicks = @linspace(y1, y2, @yTicks + 1).subarray(1)
-    
-    for xTick in xTicks
-      context.beginPath()
-      context.moveTo(xTick, y1)
-      context.lineTo(xTick, y1 - @xTickSize)
-      context.stroke()
-    
-    for yTick in yTicks
-      context.beginPath()
-      context.moveTo(x1 - 1, yTick)
-      context.lineTo(x1 - 1 + @yTickSize, yTick)
-      context.stroke()
-    
-    # Axes names
-    context.font = "#{@fontSize}px #{@fontFamily}"
-    
-    key1width = context.measureText(@key1).width
-    key2width = context.measureText(@key2).width
-    
-    # Measurements for x axis
-    [x, y] = @xpyp2xy(1.0 - margin, -1.0 + margin)
-    x -= key1width
-    y += @fontSize + 4
-    context.fillText("#{@key1}", x, y)
-    
-    # Measurements for y axis
-    context.save()
-    context.rotate(-Math.PI / 2)
-    x = -1 * (margin * @height / 2 + key2width)
-    y = margin * @width / 2 - @fontSize
-    context.fillText("#{@key2}", x, y)
-    context.restore()
   
   scatter2D: (data) ->
     

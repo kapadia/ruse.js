@@ -159,6 +159,73 @@
       return this.gl.drawArrays(this.drawMode, 0, this.plotBuffer.numItems);
     };
 
+    Ruse.prototype.drawAxes = function() {
+      var context, i, key1width, key2width, lineWidth, lineWidthX, lineWidthY, margin, value, vertices, x, x1, x2, xTick, xTicks, xp, y, y1, y2, yTick, yTicks, yp, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3;
+      this.axesCanvas.width = this.axesCanvas.width;
+      context = this.axesCanvas.getContext('2d');
+      context.imageSmoothingEnabled = false;
+      context.lineWidth = 1;
+      context.translate(this.xOffset, this.yOffset);
+      lineWidth = context.lineWidth;
+      lineWidthX = lineWidth * 2 / this.width;
+      lineWidthY = lineWidth * 2 / this.height;
+      margin = this.getMargin();
+      vertices = new Float32Array([-1.0 + margin - lineWidthX, 1.0, -1.0 + margin - lineWidthX, -1.0, -1.0, -1.0 + margin - lineWidthY, 1.0, -1.0 + margin - lineWidthY]);
+      for (i = _i = 0, _len = vertices.length; _i < _len; i = _i += 2) {
+        value = vertices[i];
+        xp = vertices[i];
+        yp = vertices[i + 1];
+        _ref = this.xpyp2xy(xp, yp), x = _ref[0], y = _ref[1];
+        vertices[i] = x;
+        vertices[i + 1] = y;
+      }
+      context.beginPath();
+      context.moveTo(vertices[0], vertices[1]);
+      context.lineTo(vertices[2], vertices[3]);
+      context.closePath();
+      context.stroke();
+      context.beginPath();
+      context.moveTo(vertices[4], vertices[5]);
+      context.lineTo(vertices[6], vertices[7]);
+      context.closePath();
+      context.stroke();
+      _ref1 = this.xpyp2xy(-1.0 + margin, -1.0 + margin), x1 = _ref1[0], y1 = _ref1[1];
+      _ref2 = this.xpyp2xy(1.0 - margin, 1.0 - margin), x2 = _ref2[0], y2 = _ref2[1];
+      xTicks = this.linspace(x1, x2, this.xTicks + 1).subarray(1);
+      yTicks = this.linspace(y1, y2, this.yTicks + 1).subarray(1);
+      for (_j = 0, _len1 = xTicks.length; _j < _len1; _j++) {
+        xTick = xTicks[_j];
+        context.beginPath();
+        context.moveTo(xTick, y1);
+        context.lineTo(xTick, y1 - this.xTickSize);
+        context.stroke();
+      }
+      for (_k = 0, _len2 = yTicks.length; _k < _len2; _k++) {
+        yTick = yTicks[_k];
+        context.beginPath();
+        context.moveTo(x1 - 1, yTick);
+        context.lineTo(x1 - 1 + this.yTickSize, yTick);
+        context.stroke();
+      }
+      context.font = "" + this.fontSize + "px " + this.fontFamily;
+      key1width = context.measureText(this.key1).width;
+      key2width = context.measureText(this.key2).width;
+      _ref3 = this.xpyp2xy(1.0 - margin, -1.0 + margin), x = _ref3[0], y = _ref3[1];
+      x -= key1width;
+      y += this.fontSize + 4;
+      context.fillText("" + this.key1, x, y);
+      context.save();
+      context.rotate(-Math.PI / 2);
+      x = -1 * (margin * this.height / 2 + key2width);
+      y = margin * this.width / 2 - this.fontSize;
+      context.fillText("" + this.key2, x, y);
+      return context.restore();
+    };
+
+    Ruse.prototype.getMargin = function() {
+      return this.margin + (this.fontSize + this.axisPadding) * 2 / this.height;
+    };
+
     Ruse.prototype.x2xp = function(x) {
       return 2 / this.width * x;
     };
@@ -261,6 +328,44 @@
       return h;
     };
 
+    Ruse.prototype.plot = function() {
+      var arg, args, datum, dimensions, keys;
+      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
+      if (args.length === 1) {
+        arg = args[0];
+        if (this.isArray(arg)) {
+          datum = arg[0];
+          if (this.isObject(datum)) {
+            keys = Object.keys(datum);
+            dimensions = keys.length;
+            switch (dimensions) {
+              case 1:
+                this.histogram(arg);
+                return;
+              case 2:
+                this.scatter2D(arg);
+                return;
+              case 3:
+                this.scatter3D(arg);
+                return;
+            }
+          } else {
+            this.histogram(arg);
+            return;
+          }
+        }
+      }
+      switch (args.length) {
+        case 2:
+          this.scatter2D.apply(this, args);
+          return;
+        case 3:
+          this.scatter3D.apply(this, args);
+          return;
+      }
+      throw "Input data not recognized by Ruse.";
+    };
+
     Ruse.prototype.histogram = function(data) {
       var clipspaceBinWidth, clipspaceLower, clipspaceSize, clipspaceUpper, datum, h, histMax, histMin, i, index, key, margin, max, min, nVertices, value, vertices, width, x, y, y0, _i, _len, _ref, _ref1;
       datum = data[0];
@@ -311,111 +416,6 @@
       this.gl.vertexAttribPointer(this.programs.ruse.vertexPositionAttribute, this.plotBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
       this.drawMode = this.gl.TRIANGLES;
       return this.draw();
-    };
-
-    Ruse.prototype.plot = function() {
-      var arg, args, datum, dimensions, keys;
-      args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-      if (args.length === 1) {
-        arg = args[0];
-        if (this.isArray(arg)) {
-          datum = arg[0];
-          if (this.isObject(datum)) {
-            keys = Object.keys(datum);
-            dimensions = keys.length;
-            switch (dimensions) {
-              case 1:
-                this.histogram(arg);
-                return;
-              case 2:
-                this.scatter2D(arg);
-                return;
-              case 3:
-                this.scatter3D(arg);
-                return;
-            }
-          } else {
-            this.histogram(arg);
-            return;
-          }
-        }
-      }
-      switch (args.length) {
-        case 2:
-          this.scatter2D.apply(this, args);
-          return;
-        case 3:
-          this.scatter3D.apply(this, args);
-          return;
-      }
-      throw "Input data not recognized by Ruse.";
-    };
-
-    Ruse.prototype.getMargin = function() {
-      return this.margin + (this.fontSize + this.axisPadding) * 2 / this.height;
-    };
-
-    Ruse.prototype.drawAxes = function() {
-      var context, i, key1width, key2width, lineWidth, lineWidthX, lineWidthY, margin, value, vertices, x, x1, x2, xTick, xTicks, xp, y, y1, y2, yTick, yTicks, yp, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3;
-      this.axesCanvas.width = this.axesCanvas.width;
-      context = this.axesCanvas.getContext('2d');
-      context.imageSmoothingEnabled = false;
-      context.lineWidth = 1;
-      context.translate(this.xOffset, this.yOffset);
-      lineWidth = context.lineWidth;
-      lineWidthX = lineWidth * 2 / this.width;
-      lineWidthY = lineWidth * 2 / this.height;
-      margin = this.getMargin();
-      vertices = new Float32Array([-1.0 + margin - lineWidthX, 1.0, -1.0 + margin - lineWidthX, -1.0, -1.0, -1.0 + margin - lineWidthY, 1.0, -1.0 + margin - lineWidthY]);
-      for (i = _i = 0, _len = vertices.length; _i < _len; i = _i += 2) {
-        value = vertices[i];
-        xp = vertices[i];
-        yp = vertices[i + 1];
-        _ref = this.xpyp2xy(xp, yp), x = _ref[0], y = _ref[1];
-        vertices[i] = x;
-        vertices[i + 1] = y;
-      }
-      context.beginPath();
-      context.moveTo(vertices[0], vertices[1]);
-      context.lineTo(vertices[2], vertices[3]);
-      context.closePath();
-      context.stroke();
-      context.beginPath();
-      context.moveTo(vertices[4], vertices[5]);
-      context.lineTo(vertices[6], vertices[7]);
-      context.closePath();
-      context.stroke();
-      _ref1 = this.xpyp2xy(-1.0 + margin, -1.0 + margin), x1 = _ref1[0], y1 = _ref1[1];
-      _ref2 = this.xpyp2xy(1.0 - margin, 1.0 - margin), x2 = _ref2[0], y2 = _ref2[1];
-      xTicks = this.linspace(x1, x2, this.xTicks + 1).subarray(1);
-      yTicks = this.linspace(y1, y2, this.yTicks + 1).subarray(1);
-      for (_j = 0, _len1 = xTicks.length; _j < _len1; _j++) {
-        xTick = xTicks[_j];
-        context.beginPath();
-        context.moveTo(xTick, y1);
-        context.lineTo(xTick, y1 - this.xTickSize);
-        context.stroke();
-      }
-      for (_k = 0, _len2 = yTicks.length; _k < _len2; _k++) {
-        yTick = yTicks[_k];
-        context.beginPath();
-        context.moveTo(x1 - 1, yTick);
-        context.lineTo(x1 - 1 + this.yTickSize, yTick);
-        context.stroke();
-      }
-      context.font = "" + this.fontSize + "px " + this.fontFamily;
-      key1width = context.measureText(this.key1).width;
-      key2width = context.measureText(this.key2).width;
-      _ref3 = this.xpyp2xy(1.0 - margin, -1.0 + margin), x = _ref3[0], y = _ref3[1];
-      x -= key1width;
-      y += this.fontSize + 4;
-      context.fillText("" + this.key1, x, y);
-      context.save();
-      context.rotate(-Math.PI / 2);
-      x = -1 * (margin * this.height / 2 + key2width);
-      y = margin * this.width / 2 - this.fontSize;
-      context.fillText("" + this.key2, x, y);
-      return context.restore();
     };
 
     Ruse.prototype.scatter2D = function(data) {
