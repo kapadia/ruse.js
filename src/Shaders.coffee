@@ -2,14 +2,18 @@
 Shaders =
   
   vertex: [
-    "attribute vec3 aVertexPosition;"
+    "attribute vec3 aPoints1;"
+    "attribute vec3 aPoints2;"
     
     "uniform mat4 uMVMatrix;"
     "uniform mat4 uPMatrix;"
+    "uniform float uT;"
+    "uniform float uS;"
     
     "void main(void) {"
         "gl_PointSize = 1.25;"
-        "gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);"
+        "vec3 vertexPosition = (1.0 - abs(uT - uS)) * aPoints2 + abs(uT - uS) * aPoints1;"
+        "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);"
     "}"
   ].join("\n")
   

@@ -35,8 +35,11 @@ class Ruse
     
     gl.useProgram(program)
     
-    program.vertexPositionAttribute = gl.getAttribLocation(program, "aVertexPosition")
-    gl.enableVertexAttribArray(program.vertexPositionAttribute)
+    program.points1Attribute = gl.getAttribLocation(program, "aPoints1")
+    gl.enableVertexAttribArray(program.points1Attribute)
+    
+    program.points2Attribute = gl.getAttribLocation(program, "aPoints2")
+    gl.enableVertexAttribArray(program.points2Attribute)
     
     program.uPMatrix = gl.getUniformLocation(program, "uPMatrix")
     program.uMVMatrix = gl.getUniformLocation(program, "uMVMatrix")
@@ -139,6 +142,15 @@ class Ruse
     @programs = {}
     @programs["ruse"] = @_createProgram(@gl, shaders.vertex, shaders.fragment)
     
+    # Get uniforms
+    @uT = @gl.getUniformLocation(@programs.ruse, "uT")
+    @uS = @gl.getUniformLocation(@programs.ruse, "uS")
+    
+    # Set initial values for uniforms
+    @S = 0
+    @gl.uniform1f(@uT, 0)
+    @gl.uniform1f(@uS, @S)
+    
     # Set up camera parameters
     @pMatrix = mat4.create()
     @mvMatrix = mat4.create()
@@ -156,10 +168,11 @@ class Ruse
     @gl.clearDepth(-50.0)
     @gl.depthFunc(@gl.GEQUAL)
     
-    @plotBuffer = @gl.createBuffer()
+    @state1Buffer = @gl.createBuffer()
+    @state2Buffer = @gl.createBuffer()
     
     # Plot style parameters
-    @margin = 0.02
+    @margin = 0.02  # percentage
     @fontSize = 10
     @tickFontSize = 9
     @fontFamily = "Helvetica"
@@ -175,6 +188,7 @@ class Ruse
     @bins = null
     @drawMode = null
     @extents = null
+    @hasData = false
     
     @_setupMouseControls()
   
@@ -184,7 +198,8 @@ class Ruse
   
   draw: ->
     @_setMatrices(@programs.ruse)
-    @gl.drawArrays(@drawMode, 0, @plotBuffer.numItems)
+    @gl.drawArrays(@drawMode, 0, @state1Buffer.numItems)
+    @gl.drawArrays(@drawMode, 0, @state2Buffer.numItems)
   
   drawAxes: ->
     # Clear the axes canvas
@@ -514,20 +529,20 @@ class Ruse
       x += clipspaceBinWidth
     
     @gl.useProgram(@programs.ruse)
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @plotBuffer)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @state1Buffer)
     
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
-    @plotBuffer.itemSize = 2
-    @plotBuffer.numItems = nVertices
+    @state1Buffer.itemSize = 2
+    @state1Buffer.numItems = nVertices
     
-    @gl.vertexAttribPointer(@programs.ruse.vertexPositionAttribute, @plotBuffer.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.vertexAttribPointer(@programs.ruse.points1Attribute, @state1Buffer.itemSize, @gl.FLOAT, false, 0, 0)
     
     @drawMode = @gl.TRIANGLES
     @draw()
+    @hasData = true
   
   scatter2D: (data) ->
     @gl.useProgram(@programs.ruse)
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @plotBuffer)
     
     # Compute margin that incorporates spaces needed for axes labels
     margin = @getMargin()
@@ -571,22 +586,68 @@ class Ruse
       vertices[i] = 2 * (1 - margin) / range1 * (val1 - min1) - 1 + margin
       vertices[i + 1] = 2 * (1 - margin) / range2 * (val2 - min2) - 1 + margin
     
+    # Determine inital and final buffers
+    if @S is 0
+      initialBuffer = @state1Buffer
+      finalBuffer = @state2Buffer
+      initialPointsAttribute = @programs.ruse.points2Attribute
+      finalPointsAttribute = @programs.ruse.points1Attribute
+    else
+      initialBuffer = @state2Buffer
+      finalBuffer = @state1Buffer
+      initialPointsAttribute = @programs.ruse.points1Attribute
+      finalPointsAttribute = @programs.ruse.points2Attribute
+    
+    # Populate initial buffer for animation
+    unless @hasData
+      
+      initialVertices = new Float32Array(vertexSize * nVertices)
+      for value, index in vertices by 2
+        initialVertices[index] = vertices[index]
+        initialVertices[index + 1] = -1.0 + margin
+      
+      @gl.bindBuffer(@gl.ARRAY_BUFFER, initialBuffer)
+      @gl.bufferData(@gl.ARRAY_BUFFER, initialVertices, @gl.STATIC_DRAW)
+      initialBuffer.itemSize = vertexSize
+      initialBuffer.numItems = nVertices
+      @gl.vertexAttribPointer(initialPointsAttribute, initialBuffer.itemSize, @gl.FLOAT, false, 0, 0)
+    
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, finalBuffer)
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
-    @plotBuffer.itemSize = vertexSize
-    @plotBuffer.numItems = nVertices
+    finalBuffer.itemSize = vertexSize
+    finalBuffer.numItems = nVertices
     
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @plotBuffer)
-    @gl.vertexAttribPointer(@programs.ruse.vertexPositionAttribute, @plotBuffer.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.vertexAttribPointer(finalPointsAttribute, finalBuffer.itemSize, @gl.FLOAT, false, 0, 0)
     
+    @hasData = true
     @drawMode = @gl.POINTS
-    @draw()
     @drawAxes()
     
+    @animate()
+  
+  animate: ->
+    @gl.useProgram(@programs.ruse)
+    
+    i = 0
+    intervalId = setInterval( =>
+      i += 1
+      @gl.uniform1f(@uT, i / 30)
+      @draw()
+      if i is 30
+        clearInterval(intervalId)
+        
+        # Reset timer and flip switch
+        @S = if @S is 0 then 1 else 0
+        @gl.uniform1f(@uT, 0)
+        @gl.uniform1f(@uS, @S)
+        @draw()
+    , 1000 / 60)
+  
   scatter3D: (data) ->
     throw "scatter3D not yet implemented"
     
     @gl.useProgram(@programs.ruse)
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @plotBuffer)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @state1Buffer)
     
     # # Compute margin that incorporates spaces needed for axes labels
     # margin = @getMargin()
@@ -633,11 +694,11 @@ class Ruse
     nVertices = 1
     vertices = new Float32Array([0.0, 0.0, 1.0])
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
-    @plotBuffer.itemSize = 3
-    @plotBuffer.numItems = nVertices
+    @state1Buffer.itemSize = 3
+    @state1Buffer.numItems = nVertices
     
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @plotBuffer)
-    @gl.vertexAttribPointer(@programs.ruse.vertexPositionAttribute, @plotBuffer.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @state1Buffer)
+    @gl.vertexAttribPointer(@programs.ruse.points1Attribute, @state1Buffer.itemSize, @gl.FLOAT, false, 0, 0)
     
     @drawMode = @gl.POINTS
     @draw()

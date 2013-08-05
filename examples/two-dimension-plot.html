@@ -51,9 +51,15 @@
         
         ruse.plot(data1);
         
-        setTimeout(function() {
+        // setTimeout(function() {
+        //   ruse.plot(data2)
+        // }, 3000);
+        
+        // ruse.animate();
+        
+        document.querySelector('button').onclick = function(e) {
           ruse.plot(data2)
-        }, 3000);
+        }
         
         window.ruse = ruse;
       });
@@ -68,6 +74,7 @@
   <div class='content'>
     <h3>Two Dimension Plot</h3>
     <!-- <div id="ruse"></div> -->
+    <button class='change-data'>Change Data</button>
     <div class='container'>
       <canvas id="ruse"></canvas>
     </div>
