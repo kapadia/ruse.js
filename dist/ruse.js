@@ -128,11 +128,11 @@
       shaders = this.constructor.Shaders;
       this.programs = {};
       this.programs["ruse"] = this._createProgram(this.gl, shaders.vertex, shaders.fragment);
-      this.uT = this.gl.getUniformLocation(this.programs.ruse, "uT");
-      this.uS = this.gl.getUniformLocation(this.programs.ruse, "uS");
-      this.S = 0;
-      this.gl.uniform1f(this.uT, 0);
-      this.gl.uniform1f(this.uS, this.S);
+      this.uTime = this.gl.getUniformLocation(this.programs.ruse, "uTime");
+      this.uSwitch = this.gl.getUniformLocation(this.programs.ruse, "uSwitch");
+      this["switch"] = 0;
+      this.gl.uniform1f(this.uTime, 0);
+      this.gl.uniform1f(this.uSwitch, this["switch"]);
       this.pMatrix = mat4.create();
       this.mvMatrix = mat4.create();
       this.rotationMatrix = mat4.create();
@@ -253,6 +253,38 @@
 
     Ruse.prototype.getMargin = function() {
       return this.margin + (2 * this.fontSize + this.axisPadding) * 2 / this.height;
+    };
+
+    Ruse.prototype.setInitialBuffer = function(buffer, attribute, vertexSize, nVertices, vertices) {
+      var index, initialVertices, margin, value, _i, _len;
+      margin = this.getMargin();
+      initialVertices = new Float32Array(vertexSize * nVertices);
+      for (index = _i = 0, _len = vertices.length; _i < _len; index = _i += 2) {
+        value = vertices[index];
+        initialVertices[index] = vertices[index];
+        initialVertices[index + 1] = -1.0 + margin;
+      }
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, initialVertices, this.gl.STATIC_DRAW);
+      buffer.itemSize = vertexSize;
+      buffer.numItems = nVertices;
+      return this.gl.vertexAttribPointer(attribute, buffer.itemSize, this.gl.FLOAT, false, 0, 0);
+    };
+
+    Ruse.prototype.delegateBuffers = function() {
+      var finalAttribute, finalBuffer, initialAttribute, initialBuffer;
+      if (this["switch"] === 0) {
+        initialBuffer = this.state1Buffer;
+        finalBuffer = this.state2Buffer;
+        initialAttribute = this.programs.ruse.points2Attribute;
+        finalAttribute = this.programs.ruse.points1Attribute;
+      } else {
+        initialBuffer = this.state2Buffer;
+        finalBuffer = this.state1Buffer;
+        initialAttribute = this.programs.ruse.points1Attribute;
+        finalAttribute = this.programs.ruse.points2Attribute;
+      }
+      return [initialBuffer, initialAttribute, finalBuffer, finalAttribute];
     };
 
     Ruse.prototype.x2xp = function(x) {
@@ -396,12 +428,12 @@
     };
 
     Ruse.prototype.histogram = function(data) {
-      var clipspaceBinWidth, clipspaceLower, clipspaceSize, clipspaceUpper, countMax, countMin, datum, finalBuffer, finalPointsAttribute, h, histMax, histMin, i, index, initialBuffer, initialPointsAttribute, initialVertices, key, margin, max, min, nVertices, value, vertexSize, vertices, width, x, y, y0, _i, _j, _len, _len1, _ref, _ref1, _ref2;
+      var clipspaceBinWidth, clipspaceLower, clipspaceSize, clipspaceUpper, countMax, countMin, datum, finalAttribute, finalBuffer, h, histMax, histMin, i, index, initialAttribute, initialBuffer, key, margin, max, min, nVertices, value, vertexSize, vertices, width, x, y, y0, _i, _len, _ref, _ref1, _ref2, _ref3;
       datum = data[0];
       if (this.isObject(datum)) {
         key = Object.keys(datum)[0];
         this.key1 = key;
-        this.key2 = "count";
+        this.key2 = "";
         data = data.map(function(d) {
           return d[key];
         });
@@ -448,35 +480,15 @@
         x += clipspaceBinWidth;
       }
       this.gl.useProgram(this.programs.ruse);
-      if (this.S === 0) {
-        initialBuffer = this.state1Buffer;
-        finalBuffer = this.state2Buffer;
-        initialPointsAttribute = this.programs.ruse.points2Attribute;
-        finalPointsAttribute = this.programs.ruse.points1Attribute;
-      } else {
-        initialBuffer = this.state2Buffer;
-        finalBuffer = this.state1Buffer;
-        initialPointsAttribute = this.programs.ruse.points1Attribute;
-        finalPointsAttribute = this.programs.ruse.points2Attribute;
-      }
+      _ref3 = this.delegateBuffers(), initialBuffer = _ref3[0], initialAttribute = _ref3[1], finalBuffer = _ref3[2], finalAttribute = _ref3[3];
       if (!this.hasData) {
-        initialVertices = new Float32Array(vertexSize * nVertices);
-        for (index = _j = 0, _len1 = vertices.length; _j < _len1; index = _j += 2) {
-          value = vertices[index];
-          initialVertices[index] = vertices[index];
-          initialVertices[index + 1] = -1.0 + margin;
-        }
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, initialBuffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, initialVertices, this.gl.STATIC_DRAW);
-        initialBuffer.itemSize = vertexSize;
-        initialBuffer.numItems = nVertices;
-        this.gl.vertexAttribPointer(initialPointsAttribute, initialBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
+        this.setInitialBuffer(initialBuffer, initialAttribute, vertexSize, nVertices, vertices);
       }
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, finalBuffer);
       this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
       finalBuffer.itemSize = vertexSize;
       finalBuffer.numItems = nVertices;
-      this.gl.vertexAttribPointer(finalPointsAttribute, finalBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
+      this.gl.vertexAttribPointer(finalAttribute, finalBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
       this.hasData = true;
       this.drawMode = this.gl.TRIANGLES;
       this.drawAxes();
@@ -484,7 +496,7 @@
     };
 
     Ruse.prototype.scatter2D = function(data) {
-      var datum, finalPointsAttribute, i, index, initialBuffer, initialPointsAttribute, initialVertices, margin, max1, max2, min1, min2, nVertices, range1, range2, val1, val2, value, vertexSize, vertices, _i, _j, _len, _len1, _ref;
+      var datum, finalAttribute, finalBuffer, i, index, initialAttribute, initialBuffer, margin, max1, max2, min1, min2, nVertices, range1, range2, val1, val2, vertexSize, vertices, _i, _len, _ref, _ref1;
       this.gl.useProgram(this.programs.ruse);
       margin = this.getMargin();
       vertexSize = 2;
@@ -526,39 +538,24 @@
         vertices[i] = 2 * (1 - margin) / range1 * (val1 - min1) - 1 + margin;
         vertices[i + 1] = 2 * (1 - margin) / range2 * (val2 - min2) - 1 + margin;
       }
-      if (this.S === 0) {
-        initialBuffer = this.state1Buffer;
-        this.finalBuffer = this.state2Buffer;
-        initialPointsAttribute = this.programs.ruse.points2Attribute;
-        finalPointsAttribute = this.programs.ruse.points1Attribute;
-      } else {
-        initialBuffer = this.state2Buffer;
-        this.finalBuffer = this.state1Buffer;
-        initialPointsAttribute = this.programs.ruse.points1Attribute;
-        finalPointsAttribute = this.programs.ruse.points2Attribute;
-      }
+      _ref1 = this.delegateBuffers(), initialBuffer = _ref1[0], initialAttribute = _ref1[1], finalBuffer = _ref1[2], finalAttribute = _ref1[3];
+      this.finalBuffer = finalBuffer;
       if (!this.hasData) {
-        initialVertices = new Float32Array(vertexSize * nVertices);
-        for (index = _j = 0, _len1 = vertices.length; _j < _len1; index = _j += 2) {
-          value = vertices[index];
-          initialVertices[index] = vertices[index];
-          initialVertices[index + 1] = -1.0 + margin;
-        }
-        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, initialBuffer);
-        this.gl.bufferData(this.gl.ARRAY_BUFFER, initialVertices, this.gl.STATIC_DRAW);
-        initialBuffer.itemSize = vertexSize;
-        initialBuffer.numItems = nVertices;
-        this.gl.vertexAttribPointer(initialPointsAttribute, initialBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
+        this.setInitialBuffer(initialBuffer, initialAttribute, vertexSize, nVertices, vertices);
       }
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.finalBuffer);
       this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
       this.finalBuffer.itemSize = vertexSize;
       this.finalBuffer.numItems = nVertices;
-      this.gl.vertexAttribPointer(finalPointsAttribute, this.finalBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
+      this.gl.vertexAttribPointer(finalAttribute, this.finalBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
       this.hasData = true;
       this.drawMode = this.gl.POINTS;
       this.drawAxes();
       return this.animate();
+    };
+
+    Ruse.prototype.scatter3D = function(data) {
+      throw "scatter3D not yet implemented";
     };
 
     Ruse.prototype.animate = function() {
@@ -568,33 +565,16 @@
       i = 0;
       return intervalId = setInterval(function() {
         i += 1;
-        _this.gl.uniform1f(_this.uT, i / 45);
+        _this.gl.uniform1f(_this.uTime, i / 45);
         _this.draw();
         if (i === 45) {
           clearInterval(intervalId);
-          _this.S = _this.S === 0 ? 1 : 0;
-          _this.gl.uniform1f(_this.uT, 0);
-          _this.gl.uniform1f(_this.uS, _this.S);
+          _this["switch"] = _this["switch"] === 0 ? 1 : 0;
+          _this.gl.uniform1f(_this.uTime, 0);
+          _this.gl.uniform1f(_this.uSwitch, _this["switch"]);
           return _this.draw();
         }
       }, 1000 / 60);
-    };
-
-    Ruse.prototype.scatter3D = function(data) {
-      var nVertices, vertices;
-      throw "scatter3D not yet implemented";
-      this.gl.useProgram(this.programs.ruse);
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.state1Buffer);
-      nVertices = 1;
-      vertices = new Float32Array([0.0, 0.0, 1.0]);
-      this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
-      this.state1Buffer.itemSize = 3;
-      this.state1Buffer.numItems = nVertices;
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.state1Buffer);
-      this.gl.vertexAttribPointer(this.programs.ruse.points1Attribute, this.state1Buffer.itemSize, this.gl.FLOAT, false, 0, 0);
-      this.drawMode = this.gl.POINTS;
-      this.draw();
-      return this.drawAxes();
     };
 
     return Ruse;
@@ -610,7 +590,7 @@
   this.astro.Ruse.version = '0.1.0';
 
   Shaders = {
-    vertex: ["attribute vec3 aPoints1;", "attribute vec3 aPoints2;", "uniform mat4 uMVMatrix;", "uniform mat4 uPMatrix;", "uniform float uT;", "uniform float uS;", "void main(void) {", "gl_PointSize = 1.25;", "vec3 vertexPosition = (1.0 - abs(uT - uS)) * aPoints2 + abs(uT - uS) * aPoints1;", "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);", "}"].join("\n"),
+    vertex: ["attribute vec3 aPoints1;", "attribute vec3 aPoints2;", "uniform mat4 uMVMatrix;", "uniform mat4 uPMatrix;", "uniform float uTime;", "uniform float uSwitch;", "void main(void) {", "gl_PointSize = 1.25;", "vec3 vertexPosition = (1.0 - abs(uTime - uSwitch)) * aPoints2 + abs(uTime - uSwitch) * aPoints1;", "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);", "}"].join("\n"),
     fragment: ["precision mediump float;", "void main(void) {", "gl_FragColor = vec4(0.0, 0.4431, 0.8980, 1.0);", "}"].join("\n")
   };
 

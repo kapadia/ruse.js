@@ -143,13 +143,13 @@ class Ruse
     @programs["ruse"] = @_createProgram(@gl, shaders.vertex, shaders.fragment)
     
     # Get uniforms
-    @uT = @gl.getUniformLocation(@programs.ruse, "uT")
-    @uS = @gl.getUniformLocation(@programs.ruse, "uS")
+    @uTime = @gl.getUniformLocation(@programs.ruse, "uTime")
+    @uSwitch = @gl.getUniformLocation(@programs.ruse, "uSwitch")
     
     # Set initial values for uniforms
-    @S = 0
-    @gl.uniform1f(@uT, 0)
-    @gl.uniform1f(@uS, @S)
+    @switch = 0
+    @gl.uniform1f(@uTime, 0)
+    @gl.uniform1f(@uSwitch, @switch)
     
     # Set up camera parameters
     @pMatrix = mat4.create()
@@ -314,7 +314,36 @@ class Ruse
     # TODO: Better way to do accomplish this by computing margin for
     #       when tick values and axes labels are requested.
     return @margin + (2 * @fontSize + @axisPadding) * 2 / @height
+  
+  # Sets an initial state for the first buffer.  Only called once.
+  setInitialBuffer: (buffer, attribute, vertexSize, nVertices, vertices) ->
+    margin = @getMargin()
     
+    initialVertices = new Float32Array(vertexSize * nVertices)
+    
+    for value, index in vertices by 2
+      initialVertices[index] = vertices[index]
+      initialVertices[index + 1] = -1.0 + margin
+      
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, buffer)
+    @gl.bufferData(@gl.ARRAY_BUFFER, initialVertices, @gl.STATIC_DRAW)
+    buffer.itemSize = vertexSize
+    buffer.numItems = nVertices
+    @gl.vertexAttribPointer(attribute, buffer.itemSize, @gl.FLOAT, false, 0, 0)
+  
+  delegateBuffers: ->
+    if @switch is 0
+      initialBuffer = @state1Buffer
+      finalBuffer = @state2Buffer
+      initialAttribute = @programs.ruse.points2Attribute
+      finalAttribute = @programs.ruse.points1Attribute
+    else
+      initialBuffer = @state2Buffer
+      finalBuffer = @state1Buffer
+      initialAttribute = @programs.ruse.points1Attribute
+      finalAttribute = @programs.ruse.points2Attribute
+    return [initialBuffer, initialAttribute, finalBuffer, finalAttribute]
+  
   #
   # Transformation functions
   #
@@ -322,16 +351,12 @@ class Ruse
   # Denoting primed coordinates as clip space (e.g. xp and yp)
   
   # Pixel units to clip space units
-  x2xp: (x) ->
-    return 2 / @width * x
-  y2yp: (y) ->
-    return -2 / @height * y
+  x2xp: (x) -> return 2 / @width * x
+  y2yp: (y) -> return -2 / @height * y
   
   # Clip space units to pixel units
-  xp2x: (xp) ->
-    return xp * @width / 2
-  yp2y: (yp) ->
-    return yp * @height / 2
+  xp2x: (xp) -> return xp * @width / 2
+  yp2y: (yp) -> return yp * @height / 2
   
   # Pixel coordinates to clip space coordinates
   xy2xpyp: (x, y) ->
@@ -410,8 +435,8 @@ class Ruse
     return h
   
   # Generic call to plot data
-  # this function determines the dimensionality of the 
-  # data, calling the appropriate function.
+  # this function determines the dimensionality of the
+  # data and calls the appropriate function.
   plot: (args...) ->
     
     if args.length is 1
@@ -470,7 +495,7 @@ class Ruse
       
       # Define keys for makeAxes function
       @key1 = key
-      @key2 = "count"
+      @key2 = ""
       
       # Parse values from array of objects
       data = data.map( (d) -> d[key] )
@@ -540,38 +565,16 @@ class Ruse
     
     @gl.useProgram(@programs.ruse)
     
-    # Determine inital and final buffers
-    if @S is 0
-      initialBuffer = @state1Buffer
-      finalBuffer = @state2Buffer
-      initialPointsAttribute = @programs.ruse.points2Attribute
-      finalPointsAttribute = @programs.ruse.points1Attribute
-    else
-      initialBuffer = @state2Buffer
-      finalBuffer = @state1Buffer
-      initialPointsAttribute = @programs.ruse.points1Attribute
-      finalPointsAttribute = @programs.ruse.points2Attribute
+    [initialBuffer, initialAttribute, finalBuffer, finalAttribute] = @delegateBuffers()
     
-    # Populate initial buffer for animation
     unless @hasData
-      
-      initialVertices = new Float32Array(vertexSize * nVertices)
-      for value, index in vertices by 2
-        initialVertices[index] = vertices[index]
-        initialVertices[index + 1] = -1.0 + margin
-        
-      @gl.bindBuffer(@gl.ARRAY_BUFFER, initialBuffer)
-      @gl.bufferData(@gl.ARRAY_BUFFER, initialVertices, @gl.STATIC_DRAW)
-      initialBuffer.itemSize = vertexSize
-      initialBuffer.numItems = nVertices
-      @gl.vertexAttribPointer(initialPointsAttribute, initialBuffer.itemSize, @gl.FLOAT, false, 0, 0)
-    
+      @setInitialBuffer(initialBuffer, initialAttribute, vertexSize, nVertices, vertices)
     
     @gl.bindBuffer(@gl.ARRAY_BUFFER, finalBuffer)
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
     finalBuffer.itemSize = vertexSize
     finalBuffer.numItems = nVertices
-    @gl.vertexAttribPointer(finalPointsAttribute, finalBuffer.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.vertexAttribPointer(finalAttribute, finalBuffer.itemSize, @gl.FLOAT, false, 0, 0)
     
     @hasData = true
     @drawMode = @gl.TRIANGLES
@@ -623,43 +626,26 @@ class Ruse
       vertices[i] = 2 * (1 - margin) / range1 * (val1 - min1) - 1 + margin
       vertices[i + 1] = 2 * (1 - margin) / range2 * (val2 - min2) - 1 + margin
     
-    # Determine inital and final buffers
-    if @S is 0
-      initialBuffer = @state1Buffer
-      @finalBuffer = @state2Buffer
-      initialPointsAttribute = @programs.ruse.points2Attribute
-      finalPointsAttribute = @programs.ruse.points1Attribute
-    else
-      initialBuffer = @state2Buffer
-      @finalBuffer = @state1Buffer
-      initialPointsAttribute = @programs.ruse.points1Attribute
-      finalPointsAttribute = @programs.ruse.points2Attribute
+    [initialBuffer, initialAttribute, finalBuffer, finalAttribute] = @delegateBuffers()
+    @finalBuffer = finalBuffer
     
     # Populate initial buffer for animation
     unless @hasData
-      initialVertices = new Float32Array(vertexSize * nVertices)
-      
-      for value, index in vertices by 2
-        initialVertices[index] = vertices[index]
-        initialVertices[index + 1] = -1.0 + margin
-      
-      @gl.bindBuffer(@gl.ARRAY_BUFFER, initialBuffer)
-      @gl.bufferData(@gl.ARRAY_BUFFER, initialVertices, @gl.STATIC_DRAW)
-      initialBuffer.itemSize = vertexSize
-      initialBuffer.numItems = nVertices
-      @gl.vertexAttribPointer(initialPointsAttribute, initialBuffer.itemSize, @gl.FLOAT, false, 0, 0)
+      @setInitialBuffer(initialBuffer, initialAttribute, vertexSize, nVertices, vertices)
     
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @finalBuffer)
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
     @finalBuffer.itemSize = vertexSize
     @finalBuffer.numItems = nVertices
-    @gl.vertexAttribPointer(finalPointsAttribute, @finalBuffer.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.vertexAttribPointer(finalAttribute, @finalBuffer.itemSize, @gl.FLOAT, false, 0, 0)
     
     @hasData = true
     @drawMode = @gl.POINTS
     @drawAxes()
-    
     @animate()
+  
+  scatter3D: (data) ->
+    throw "scatter3D not yet implemented"
   
   animate: ->
     @gl.useProgram(@programs.ruse)
@@ -667,78 +653,18 @@ class Ruse
     i = 0
     intervalId = setInterval( =>
       i += 1
-      @gl.uniform1f(@uT, i / 45)
+      @gl.uniform1f(@uTime, i / 45)
       @draw()
       if i is 45
         clearInterval(intervalId)
         
         # Reset timer and flip switch
-        @S = if @S is 0 then 1 else 0
-        @gl.uniform1f(@uT, 0)
-        @gl.uniform1f(@uS, @S)
+        @switch = if @switch is 0 then 1 else 0
+        @gl.uniform1f(@uTime, 0)
+        @gl.uniform1f(@uSwitch, @switch)
         @draw()
     , 1000 / 60)
-  
-  scatter3D: (data) ->
-    throw "scatter3D not yet implemented"
-    
-    @gl.useProgram(@programs.ruse)
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @state1Buffer)
-    
-    # # Compute margin that incorporates spaces needed for axes labels
-    # margin = @getMargin()
-    # 
-    # nVertices = data.length
-    # vertices = new Float32Array(3 * nVertices)
-    # 
-    # [key1, key2, key3] = Object.keys(data[0])
-    # 
-    # # Get minimum and maximum for each column
-    # # TODO: Refactor getExtent to iterate over array of objects
-    # i = nVertices
-    # min1 = max1 = data[i - 1][key1]
-    # min2 = max2 = data[i - 1][key2]
-    # min3 = max3 = data[i - 1][key3]
-    # while i--
-    #   val1 = data[i][key1]
-    #   val2 = data[i][key2]
-    #   val3 = data[i][key3]
-    #   
-    #   min1 = val1 if val1 < min1
-    #   max1 = val1 if val1 > max1
-    #   
-    #   min2 = val2 if val2 < min2
-    #   max2 = val2 if val2 > max2
-    #   
-    #   min3 = val3 if val3 < min3
-    #   max3 = val3 if val3 > max3
-    # 
-    # range1 = max1 - min1
-    # range2 = max2 - min2
-    # range3 = max3 - min3
-    # 
-    # for datum, index in data
-    #   i = 3 * index
-    #   val1 = datum[key1]
-    #   val2 = datum[key2]
-    #   val3 = datum[key3]
-    #   
-    #   vertices[i] = 2 * (1 - margin) / range1 * (val1 - min1) - 1 + margin
-    #   vertices[i + 1] = 2 * (1 - margin) / range2 * (val2 - min2) - 1 + margin
-    #   vertices[i + 3] = 2 * (1 - margin) / range3 * (val3 - min3) - 1 + margin
-    
-    nVertices = 1
-    vertices = new Float32Array([0.0, 0.0, 1.0])
-    @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
-    @state1Buffer.itemSize = 3
-    @state1Buffer.numItems = nVertices
-    
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @state1Buffer)
-    @gl.vertexAttribPointer(@programs.ruse.points1Attribute, @state1Buffer.itemSize, @gl.FLOAT, false, 0, 0)
-    
-    @drawMode = @gl.POINTS
-    @draw()
-    @drawAxes()
+
 
 
 @astro = {} unless @astro?
