@@ -397,10 +397,12 @@
     };
 
     Ruse.prototype.histogram = function(data) {
-      var clipspaceBinWidth, clipspaceLower, clipspaceSize, clipspaceUpper, datum, finalBuffer, finalPointsAttribute, h, histMax, histMin, i, index, initialBuffer, initialPointsAttribute, initialVertices, key, margin, max, min, nVertices, value, vertexSize, vertices, width, x, y, y0, _i, _j, _len, _len1, _ref, _ref1;
+      var clipspaceBinWidth, clipspaceLower, clipspaceSize, clipspaceUpper, countMax, countMin, datum, finalBuffer, finalPointsAttribute, h, histMax, histMin, i, index, initialBuffer, initialPointsAttribute, initialVertices, key, margin, max, min, nVertices, value, vertexSize, vertices, width, x, y, y0, _i, _j, _len, _len1, _ref, _ref1, _ref2;
       datum = data[0];
       if (this.isObject(datum)) {
         key = Object.keys(datum)[0];
+        this.key1 = key;
+        this.key2 = "count";
         data = data.map(function(d) {
           return d[key];
         });
@@ -411,12 +413,19 @@
         this.bins = Math.floor(width / this.targetBinWidth);
       }
       h = this.getHistogram(data, min, max, this.bins);
+      _ref1 = this.getExtent(h), countMin = _ref1[0], countMax = _ref1[1];
+      this.extents = {
+        xmin: min,
+        xmax: max,
+        ymin: countMin,
+        ymax: countMax
+      };
       margin = this.getMargin();
       clipspaceSize = 2.0 - 2 * margin;
       clipspaceLower = -1.0 + margin;
       clipspaceUpper = 1.0 - margin;
       clipspaceBinWidth = clipspaceSize / this.bins;
-      _ref1 = this.getExtent(h), histMin = _ref1[0], histMax = _ref1[1];
+      _ref2 = this.getExtent(h), histMin = _ref2[0], histMax = _ref2[1];
       vertexSize = 2;
       nVertices = 6 * this.bins;
       vertices = new Float32Array(vertexSize * nVertices);
@@ -471,6 +480,7 @@
       this.gl.vertexAttribPointer(finalPointsAttribute, finalBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
       this.hasData = true;
       this.drawMode = this.gl.TRIANGLES;
+      this.drawAxes();
       return this.animate();
     };
 

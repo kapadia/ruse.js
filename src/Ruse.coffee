@@ -470,6 +470,10 @@ class Ruse
       # Get key
       key = Object.keys(datum)[0] 
       
+      # Define keys for makeAxes function
+      @key1 = key
+      @key2 = "count"
+      
       # Parse values from array of objects
       data = data.map( (d) -> d[key] )
     
@@ -491,6 +495,14 @@ class Ruse
     
     # Compute histogram
     h = @getHistogram(data, min, max, @bins)
+    [countMin, countMax] = @getExtent(h)
+    
+    # Store computed extents for use when creating axes
+    @extents =
+      xmin: min
+      xmax: max
+      ymin: countMin
+      ymax: countMax
     
     # Generate vertices describing histogram
     margin = @getMargin()
@@ -565,6 +577,7 @@ class Ruse
     
     @hasData = true
     @drawMode = @gl.TRIANGLES
+    @drawAxes()
     @animate()
   
   scatter2D: (data) ->
