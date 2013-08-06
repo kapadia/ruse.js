@@ -34,7 +34,66 @@
     
     new astro.FITS('data/plates-dr9.fits', function(f) {
       var table = f.getDataUnit();
+      var header = f.getHeader();
+      
+      // Set up drop down menus
+      var xAxisEl = document.querySelector('select[class="x-axis"]');
+      var yAxisEl = document.querySelector('select[class="y-axis"]');
+      
+      var cols = table.columns;
+      
+      // Get numerical columns
+      columns = [];
+      for (var i = 1; i < cols.length + 1; i++) {
+        form = "TFORM" + i;
+        type = "TTYPE" + i;
+        match = header.get(form).match(/(\d*)([BIJKED])/)
+        if (typeof match !== "undefined" && match !== null) {
+          columns.push(header.get(type));
+        }
+      }
+      
+      for (var i = 0; i < columns.length; i++) {
+        var optionX = document.createElement('option');
+        var optionY = document.createElement('option');
+        
+        optionX.textContent = columns[i];
+        optionY.textContent = columns[i];
+        
+        xAxisEl.appendChild(optionX);
+        yAxisEl.appendChild(optionY);
+      }
+      
       table.getRows(0, table.rows, function(rows) {
+        
+        xAxisEl.onchange = function(e) {
+          var key1 = xAxisEl.value;
+          var key2 = yAxisEl.value;
+          
+          data = rows.map(function(d) {
+            datum = {};
+            datum[key1] = d[key1];
+            datum[key2] = d[key2];
+            return datum;
+          });
+          ruse.plot(data);
+        }
+        yAxisEl.onchange = function(e) {
+          var key1 = xAxisEl.value;
+          var key2 = yAxisEl.value;
+          
+          data = rows.map(function(d) {
+            datum = {};
+            datum[key1] = d[key1];
+            datum[key2] = d[key2];
+            return datum;
+          });
+          ruse.plot(data);
+        }
+        
+        xAxisEl.removeAttribute('disabled');
+        yAxisEl.removeAttribute('disabled');
+        
         data1 = rows.map(function(d) {
           datum = {};
           datum[key1] = d[key1];
@@ -51,16 +110,6 @@
         
         ruse.plot(data1);
         
-        // setTimeout(function() {
-        //   ruse.plot(data2)
-        // }, 3000);
-        
-        // ruse.animate();
-        
-        document.querySelector('button').onclick = function(e) {
-          ruse.plot(data2)
-        }
-        
         window.ruse = ruse;
       });
     });
@@ -73,8 +122,12 @@
 <body onload='main()'>
   <div class='content'>
     <h3>Two Dimension Plot</h3>
-    <!-- <div id="ruse"></div> -->
-    <button class='change-data'>Change Data</button>
+    
+    <select class='x-axis' disabled>
+    </select>
+    <select class='y-axis' disabled>
+    </select>
+    
     <div class='container'>
       <canvas id="ruse"></canvas>
     </div>
