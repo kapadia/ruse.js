@@ -535,9 +535,9 @@
       i = 0;
       return intervalId = setInterval(function() {
         i += 1;
-        _this.gl.uniform1f(_this.uT, i / 30);
+        _this.gl.uniform1f(_this.uT, i / 45);
         _this.draw();
-        if (i === 30) {
+        if (i === 45) {
           clearInterval(intervalId);
           _this.S = _this.S === 0 ? 1 : 0;
           _this.gl.uniform1f(_this.uT, 0);

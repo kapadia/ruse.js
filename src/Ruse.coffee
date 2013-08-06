@@ -631,9 +631,9 @@ class Ruse
     i = 0
     intervalId = setInterval( =>
       i += 1
-      @gl.uniform1f(@uT, i / 30)
+      @gl.uniform1f(@uT, i / 45)
       @draw()
-      if i is 30
+      if i is 45
         clearInterval(intervalId)
         
         # Reset timer and flip switch

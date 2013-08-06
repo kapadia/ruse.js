@@ -26,13 +26,7 @@
     // var ruse = new astro.Ruse(canvas, 500, 300);
     var ruse = new astro.Ruse(gl);
     
-    var key1 = "RACEN";
-    var key2 = "DECCEN";
-    
-    var key3 = "N_GALAXY";
-    var key4 = "N_STAR";
-    
-    new astro.FITS('data/plates-dr9.fits', function(f) {
+    new astro.FITS('data/dr7qso.fit', function(f) {
       var table = f.getDataUnit();
       var header = f.getHeader();
       
@@ -64,6 +58,8 @@
         yAxisEl.appendChild(optionY);
       }
       
+      console.log(table.rows);
+      
       table.getRows(0, table.rows, function(rows) {
         
         xAxisEl.onchange = function(e) {
@@ -79,36 +75,11 @@
           ruse.plot(data);
         }
         yAxisEl.onchange = function(e) {
-          var key1 = xAxisEl.value;
-          var key2 = yAxisEl.value;
-          
-          data = rows.map(function(d) {
-            datum = {};
-            datum[key1] = d[key1];
-            datum[key2] = d[key2];
-            return datum;
-          });
-          ruse.plot(data);
+          xAxisEl.onchange(e);
         }
         
         xAxisEl.removeAttribute('disabled');
         yAxisEl.removeAttribute('disabled');
-        
-        data1 = rows.map(function(d) {
-          datum = {};
-          datum[key1] = d[key1];
-          datum[key2] = d[key2];
-          return datum;
-        });
-        
-        data2 = rows.map(function(d) {
-          datum = {};
-          datum[key3] = d[key3];
-          datum[key4] = d[key4];
-          return datum;
-        });
-        
-        ruse.plot(data1);
         
         window.ruse = ruse;
       });
