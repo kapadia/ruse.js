@@ -26,7 +26,11 @@
     // var ruse = new astro.Ruse(canvas, 500, 300);
     var ruse = new astro.Ruse(gl);
     
-    new astro.FITS('data/dr7qso.fit', function(f) {
+    // var path = "data/dr7qso.fit";
+    var path = "data/plates-dr9.fits";
+    
+    
+    new astro.FITS(path, function(f) {
       var table = f.getDataUnit();
       var header = f.getHeader();
       

@@ -167,8 +167,7 @@
 
     Ruse.prototype.draw = function() {
       this._setMatrices(this.programs.ruse);
-      this.gl.drawArrays(this.drawMode, 0, this.state1Buffer.numItems);
-      return this.gl.drawArrays(this.drawMode, 0, this.state2Buffer.numItems);
+      return this.gl.drawArrays(this.drawMode, 0, this.finalBuffer.numItems);
     };
 
     Ruse.prototype.drawAxes = function() {
@@ -398,7 +397,7 @@
     };
 
     Ruse.prototype.histogram = function(data) {
-      var clipspaceBinWidth, clipspaceLower, clipspaceSize, clipspaceUpper, datum, h, histMax, histMin, i, index, key, margin, max, min, nVertices, value, vertices, width, x, y, y0, _i, _len, _ref, _ref1;
+      var clipspaceBinWidth, clipspaceLower, clipspaceSize, clipspaceUpper, datum, finalBuffer, finalPointsAttribute, h, histMax, histMin, i, index, initialBuffer, initialPointsAttribute, initialVertices, key, margin, max, min, nVertices, value, vertexSize, vertices, width, x, y, y0, _i, _j, _len, _len1, _ref, _ref1;
       datum = data[0];
       if (this.isObject(datum)) {
         key = Object.keys(datum)[0];
@@ -418,8 +417,9 @@
       clipspaceUpper = 1.0 - margin;
       clipspaceBinWidth = clipspaceSize / this.bins;
       _ref1 = this.getExtent(h), histMin = _ref1[0], histMax = _ref1[1];
+      vertexSize = 2;
       nVertices = 6 * this.bins;
-      vertices = new Float32Array(2 * nVertices);
+      vertices = new Float32Array(vertexSize * nVertices);
       x = -1.0 + margin;
       y = y0 = -1.0 + margin;
       for (index = _i = 0, _len = h.length; _i < _len; index = ++_i) {
@@ -440,18 +440,42 @@
         x += clipspaceBinWidth;
       }
       this.gl.useProgram(this.programs.ruse);
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.state1Buffer);
+      if (this.S === 0) {
+        initialBuffer = this.state1Buffer;
+        finalBuffer = this.state2Buffer;
+        initialPointsAttribute = this.programs.ruse.points2Attribute;
+        finalPointsAttribute = this.programs.ruse.points1Attribute;
+      } else {
+        initialBuffer = this.state2Buffer;
+        finalBuffer = this.state1Buffer;
+        initialPointsAttribute = this.programs.ruse.points1Attribute;
+        finalPointsAttribute = this.programs.ruse.points2Attribute;
+      }
+      if (!this.hasData) {
+        initialVertices = new Float32Array(vertexSize * nVertices);
+        for (index = _j = 0, _len1 = vertices.length; _j < _len1; index = _j += 2) {
+          value = vertices[index];
+          initialVertices[index] = vertices[index];
+          initialVertices[index + 1] = -1.0 + margin;
+        }
+        this.gl.bindBuffer(this.gl.ARRAY_BUFFER, initialBuffer);
+        this.gl.bufferData(this.gl.ARRAY_BUFFER, initialVertices, this.gl.STATIC_DRAW);
+        initialBuffer.itemSize = vertexSize;
+        initialBuffer.numItems = nVertices;
+        this.gl.vertexAttribPointer(initialPointsAttribute, initialBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
+      }
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, finalBuffer);
       this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
-      this.state1Buffer.itemSize = 2;
-      this.state1Buffer.numItems = nVertices;
-      this.gl.vertexAttribPointer(this.programs.ruse.points1Attribute, this.state1Buffer.itemSize, this.gl.FLOAT, false, 0, 0);
+      finalBuffer.itemSize = vertexSize;
+      finalBuffer.numItems = nVertices;
+      this.gl.vertexAttribPointer(finalPointsAttribute, finalBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
+      this.hasData = true;
       this.drawMode = this.gl.TRIANGLES;
-      this.draw();
-      return this.hasData = true;
+      return this.animate();
     };
 
     Ruse.prototype.scatter2D = function(data) {
-      var datum, finalBuffer, finalPointsAttribute, i, index, initialBuffer, initialPointsAttribute, initialVertices, margin, max1, max2, min1, min2, nVertices, range1, range2, val1, val2, value, vertexSize, vertices, _i, _j, _len, _len1, _ref;
+      var datum, finalPointsAttribute, i, index, initialBuffer, initialPointsAttribute, initialVertices, margin, max1, max2, min1, min2, nVertices, range1, range2, val1, val2, value, vertexSize, vertices, _i, _j, _len, _len1, _ref;
       this.gl.useProgram(this.programs.ruse);
       margin = this.getMargin();
       vertexSize = 2;
@@ -495,12 +519,12 @@
       }
       if (this.S === 0) {
         initialBuffer = this.state1Buffer;
-        finalBuffer = this.state2Buffer;
+        this.finalBuffer = this.state2Buffer;
         initialPointsAttribute = this.programs.ruse.points2Attribute;
         finalPointsAttribute = this.programs.ruse.points1Attribute;
       } else {
         initialBuffer = this.state2Buffer;
-        finalBuffer = this.state1Buffer;
+        this.finalBuffer = this.state1Buffer;
         initialPointsAttribute = this.programs.ruse.points1Attribute;
         finalPointsAttribute = this.programs.ruse.points2Attribute;
       }
@@ -517,11 +541,11 @@
         initialBuffer.numItems = nVertices;
         this.gl.vertexAttribPointer(initialPointsAttribute, initialBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
       }
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, finalBuffer);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.finalBuffer);
       this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
-      finalBuffer.itemSize = vertexSize;
-      finalBuffer.numItems = nVertices;
-      this.gl.vertexAttribPointer(finalPointsAttribute, finalBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
+      this.finalBuffer.itemSize = vertexSize;
+      this.finalBuffer.numItems = nVertices;
+      this.gl.vertexAttribPointer(finalPointsAttribute, this.finalBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
       this.hasData = true;
       this.drawMode = this.gl.POINTS;
       this.drawAxes();

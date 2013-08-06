@@ -198,8 +198,7 @@ class Ruse
   
   draw: ->
     @_setMatrices(@programs.ruse)
-    @gl.drawArrays(@drawMode, 0, @state1Buffer.numItems)
-    @gl.drawArrays(@drawMode, 0, @state2Buffer.numItems)
+    @gl.drawArrays(@drawMode, 0, @finalBuffer.numItems)
   
   drawAxes: ->
     # Clear the axes canvas
@@ -503,8 +502,9 @@ class Ruse
     clipspaceBinWidth = clipspaceSize / @bins
     [histMin, histMax] = @getExtent(h)
     
+    vertexSize = 2
     nVertices = 6 * @bins
-    vertices = new Float32Array(2 * nVertices)
+    vertices = new Float32Array(vertexSize * nVertices)
     
     x = -1.0 + margin
     y = y0 = -1.0 + margin
@@ -529,17 +529,43 @@ class Ruse
       x += clipspaceBinWidth
     
     @gl.useProgram(@programs.ruse)
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @state1Buffer)
     
+    # Determine inital and final buffers
+    if @S is 0
+      initialBuffer = @state1Buffer
+      finalBuffer = @state2Buffer
+      initialPointsAttribute = @programs.ruse.points2Attribute
+      finalPointsAttribute = @programs.ruse.points1Attribute
+    else
+      initialBuffer = @state2Buffer
+      finalBuffer = @state1Buffer
+      initialPointsAttribute = @programs.ruse.points1Attribute
+      finalPointsAttribute = @programs.ruse.points2Attribute
+    
+    # Populate initial buffer for animation
+    unless @hasData
+      
+      initialVertices = new Float32Array(vertexSize * nVertices)
+      for value, index in vertices by 2
+        initialVertices[index] = vertices[index]
+        initialVertices[index + 1] = -1.0 + margin
+        
+      @gl.bindBuffer(@gl.ARRAY_BUFFER, initialBuffer)
+      @gl.bufferData(@gl.ARRAY_BUFFER, initialVertices, @gl.STATIC_DRAW)
+      initialBuffer.itemSize = vertexSize
+      initialBuffer.numItems = nVertices
+      @gl.vertexAttribPointer(initialPointsAttribute, initialBuffer.itemSize, @gl.FLOAT, false, 0, 0)
+    
+    
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, finalBuffer)
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
-    @state1Buffer.itemSize = 2
-    @state1Buffer.numItems = nVertices
+    finalBuffer.itemSize = vertexSize
+    finalBuffer.numItems = nVertices
+    @gl.vertexAttribPointer(finalPointsAttribute, finalBuffer.itemSize, @gl.FLOAT, false, 0, 0)
     
-    @gl.vertexAttribPointer(@programs.ruse.points1Attribute, @state1Buffer.itemSize, @gl.FLOAT, false, 0, 0)
-    
-    @drawMode = @gl.TRIANGLES
-    @draw()
     @hasData = true
+    @drawMode = @gl.TRIANGLES
+    @animate()
   
   scatter2D: (data) ->
     @gl.useProgram(@programs.ruse)
@@ -589,19 +615,19 @@ class Ruse
     # Determine inital and final buffers
     if @S is 0
       initialBuffer = @state1Buffer
-      finalBuffer = @state2Buffer
+      @finalBuffer = @state2Buffer
       initialPointsAttribute = @programs.ruse.points2Attribute
       finalPointsAttribute = @programs.ruse.points1Attribute
     else
       initialBuffer = @state2Buffer
-      finalBuffer = @state1Buffer
+      @finalBuffer = @state1Buffer
       initialPointsAttribute = @programs.ruse.points1Attribute
       finalPointsAttribute = @programs.ruse.points2Attribute
     
     # Populate initial buffer for animation
     unless @hasData
-      
       initialVertices = new Float32Array(vertexSize * nVertices)
+      
       for value, index in vertices by 2
         initialVertices[index] = vertices[index]
         initialVertices[index + 1] = -1.0 + margin
@@ -612,12 +638,11 @@ class Ruse
       initialBuffer.numItems = nVertices
       @gl.vertexAttribPointer(initialPointsAttribute, initialBuffer.itemSize, @gl.FLOAT, false, 0, 0)
     
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, finalBuffer)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @finalBuffer)
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
-    finalBuffer.itemSize = vertexSize
-    finalBuffer.numItems = nVertices
-    
-    @gl.vertexAttribPointer(finalPointsAttribute, finalBuffer.itemSize, @gl.FLOAT, false, 0, 0)
+    @finalBuffer.itemSize = vertexSize
+    @finalBuffer.numItems = nVertices
+    @gl.vertexAttribPointer(finalPointsAttribute, @finalBuffer.itemSize, @gl.FLOAT, false, 0, 0)
     
     @hasData = true
     @drawMode = @gl.POINTS
