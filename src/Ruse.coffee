@@ -170,6 +170,7 @@ class Ruse
     
     @state1Buffer = @gl.createBuffer()
     @state2Buffer = @gl.createBuffer()
+    @finalBuffer = @state2Buffer
     
     # Plot style parameters
     @margin = 0.02  # percentage

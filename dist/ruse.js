@@ -147,6 +147,7 @@
       this.gl.depthFunc(this.gl.GEQUAL);
       this.state1Buffer = this.gl.createBuffer();
       this.state2Buffer = this.gl.createBuffer();
+      this.finalBuffer = this.state2Buffer;
       this.margin = 0.02;
       this.fontSize = 10;
       this.tickFontSize = 9;
