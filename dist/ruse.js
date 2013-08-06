@@ -162,7 +162,6 @@
       this.drawMode = null;
       this.extents = null;
       this.hasData = false;
-      this._setupMouseControls();
     }
 
     Ruse.prototype.draw = function() {

@@ -189,8 +189,6 @@ class Ruse
     @drawMode = null
     @extents = null
     @hasData = false
-    
-    @_setupMouseControls()
   
   #
   # Draw functions
