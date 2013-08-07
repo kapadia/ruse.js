@@ -1,0 +1,28 @@
+
+body {
+  background: #F3F3F3;
+  margin: 0;
+  padding: 0;
+  border-top: 3px solid #0071e5;
+  font-family: "HelveticaNeue-Light", "Helvetica Neue Light", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
+  font-weight: 200;
+}
+
+.content {
+  margin: 20px;
+}
+
+.visualization {
+  display: inline-block;
+}
+
+canvas {
+  cursor: crosshair;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+}
+
+canvas:active {
+  cursor: move;
+}
