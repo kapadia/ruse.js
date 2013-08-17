@@ -20,7 +20,7 @@ Shaders =
         "gl_PointSize = 1.25;"
         
         "float scaleComponent = 2.0 * (1.0 - uMargin);"
-        "float offsetComponent = (-1.0 + uMargin);"
+        "float offsetComponent = (uMargin - 1.0);"
         
         "vec3 scale = vec3(scaleComponent, scaleComponent, 0.0);"
         "vec3 offset = vec3(offsetComponent, offsetComponent, 0.0);"

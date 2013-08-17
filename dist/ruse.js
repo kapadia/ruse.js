@@ -378,21 +378,6 @@
       return [min, max];
     };
 
-    Ruse.prototype.getHistogram = function(arr, min, max, bins) {
-      var dx, h, i, index, range, value;
-      range = max - min;
-      h = new Uint32Array(bins);
-      dx = range / bins;
-      i = arr.length;
-      while (i--) {
-        value = arr[i];
-        index = ~~((value - min) / dx);
-        h[index] += 1;
-      }
-      h.dx = dx;
-      return h;
-    };
-
     Ruse.prototype.plot = function() {
       var arg, args, datum, dimensions, keys;
       args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
@@ -431,137 +416,6 @@
       throw "Input data not recognized by Ruse.";
     };
 
-    Ruse.prototype.histogram = function(data) {
-      var clipspaceBinWidth, clipspaceLower, clipspaceSize, clipspaceUpper, countMax, countMin, datum, finalAttribute, finalBuffer, h, histMax, histMin, i, index, initialAttribute, initialBuffer, key, margin, max, min, nVertices, value, vertexSize, vertices, width, x, y, y0, _i, _len, _ref, _ref1, _ref2, _ref3;
-      datum = data[0];
-      if (this.isObject(datum)) {
-        key = Object.keys(datum)[0];
-        this.key1 = key;
-        this.key2 = "";
-        data = data.map(function(d) {
-          return d[key];
-        });
-      }
-      _ref = this.getExtent(data), min = _ref[0], max = _ref[1];
-      if (!this.bins) {
-        width = this.width - this.getMargin() * this.width;
-        this.bins = Math.floor(width / this.targetBinWidth);
-      }
-      h = this.getHistogram(data, min, max, this.bins);
-      _ref1 = this.getExtent(h), countMin = _ref1[0], countMax = _ref1[1];
-      this.extents = {
-        xmin: min,
-        xmax: max,
-        ymin: countMin,
-        ymax: countMax
-      };
-      margin = this.getMargin();
-      clipspaceSize = 2.0 - 2 * margin;
-      clipspaceLower = -1.0 + margin;
-      clipspaceUpper = 1.0 - margin;
-      clipspaceBinWidth = clipspaceSize / this.bins;
-      _ref2 = this.getExtent(h), histMin = _ref2[0], histMax = _ref2[1];
-      vertexSize = 2;
-      nVertices = 6 * this.bins;
-      vertices = new Float32Array(vertexSize * nVertices);
-      x = -1.0 + margin;
-      y = y0 = -1.0 + margin;
-      for (index = _i = 0, _len = h.length; _i < _len; index = ++_i) {
-        value = h[index];
-        i = 12 * index;
-        vertices[i + 0] = x;
-        vertices[i + 1] = y0;
-        vertices[i + 2] = x;
-        vertices[i + 3] = (clipspaceUpper - clipspaceLower) * value / histMax + clipspaceLower;
-        vertices[i + 4] = x + clipspaceBinWidth;
-        vertices[i + 5] = y0;
-        vertices[i + 6] = vertices[i + 4];
-        vertices[i + 7] = vertices[i + 5];
-        vertices[i + 8] = vertices[i + 4];
-        vertices[i + 9] = vertices[i + 3];
-        vertices[i + 10] = vertices[i + 2];
-        vertices[i + 11] = vertices[i + 3];
-        x += clipspaceBinWidth;
-      }
-      this.gl.useProgram(this.programs.ruse);
-      _ref3 = this.delegateBuffers(), initialBuffer = _ref3[0], initialAttribute = _ref3[1], finalBuffer = _ref3[2], finalAttribute = _ref3[3];
-      if (!this.hasData) {
-        this.setInitialBuffer(initialBuffer, initialAttribute, vertexSize, nVertices, vertices);
-      }
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, finalBuffer);
-      this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
-      finalBuffer.itemSize = vertexSize;
-      finalBuffer.numItems = nVertices;
-      this.gl.vertexAttribPointer(finalAttribute, finalBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
-      this.hasData = true;
-      this.drawMode = this.gl.TRIANGLES;
-      this.drawAxes();
-      return this.animate();
-    };
-
-    Ruse.prototype.scatter2D = function(data) {
-      var datum, finalAttribute, finalBuffer, i, index, initialAttribute, initialBuffer, margin, max1, max2, min1, min2, nVertices, range1, range2, val1, val2, vertexSize, vertices, _i, _len, _ref, _ref1;
-      this.gl.useProgram(this.programs.ruse);
-      margin = this.getMargin();
-      vertexSize = 2;
-      nVertices = data.length;
-      vertices = new Float32Array(vertexSize * nVertices);
-      _ref = Object.keys(data[0]), this.key1 = _ref[0], this.key2 = _ref[1];
-      i = nVertices;
-      min1 = max1 = data[i - 1][this.key1];
-      min2 = max2 = data[i - 1][this.key2];
-      while (i--) {
-        val1 = data[i][this.key1];
-        val2 = data[i][this.key2];
-        if (val1 < min1) {
-          min1 = val1;
-        }
-        if (val1 > max1) {
-          max1 = val1;
-        }
-        if (val2 < min2) {
-          min2 = val2;
-        }
-        if (val2 > max2) {
-          max2 = val2;
-        }
-      }
-      this.extents = {
-        xmin: min1,
-        xmax: max1,
-        ymin: min2,
-        ymax: max2
-      };
-      this.gl.uniform3f(this.uMinimum, min1, min2, 0);
-      this.gl.uniform3f(this.uMaximum, max1, max2, 1);
-      range1 = max1 - min1;
-      range2 = max2 - min2;
-      for (index = _i = 0, _len = data.length; _i < _len; index = ++_i) {
-        datum = data[index];
-        i = vertexSize * index;
-        vertices[i] = datum[this.key1];
-        vertices[i + 1] = datum[this.key2];
-      }
-      _ref1 = this.delegateBuffers(), initialBuffer = _ref1[0], initialAttribute = _ref1[1], finalBuffer = _ref1[2], finalAttribute = _ref1[3];
-      this.finalBuffer = finalBuffer;
-      if (!this.hasData) {
-        this.setInitialBuffer(initialBuffer, initialAttribute, vertexSize, nVertices, vertices);
-      }
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.finalBuffer);
-      this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
-      this.finalBuffer.itemSize = vertexSize;
-      this.finalBuffer.numItems = nVertices;
-      this.gl.vertexAttribPointer(finalAttribute, this.finalBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
-      this.hasData = true;
-      this.drawMode = this.gl.POINTS;
-      this.drawAxes();
-      return this.animate();
-    };
-
-    Ruse.prototype.scatter3D = function(data) {
-      throw "scatter3D not yet implemented";
-    };
-
     Ruse.prototype.animate = function() {
       var i, intervalId,
         _this = this;
@@ -593,8 +447,165 @@
 
   this.astro.Ruse.version = '0.1.0';
 
+  Ruse = this.astro.Ruse;
+
+  Ruse.prototype.setFontSize = function(value) {
+    this.fontSize = value;
+    return this.drawAxes();
+  };
+
+  Ruse.prototype.getHistogram = function(arr, min, max, bins) {
+    var dx, h, i, index, range, value;
+    range = max - min;
+    h = new Uint32Array(bins);
+    dx = range / bins;
+    i = arr.length;
+    while (i--) {
+      value = arr[i];
+      index = ~~((value - min) / dx);
+      h[index] += 1;
+    }
+    h.dx = dx;
+    return h;
+  };
+
+  Ruse.prototype.histogram = function(data) {
+    var clipspaceBinWidth, clipspaceLower, clipspaceSize, clipspaceUpper, countMax, countMin, datum, finalAttribute, finalBuffer, h, histMax, histMin, i, index, initialAttribute, initialBuffer, key, margin, max, min, nVertices, value, vertexSize, vertices, width, x, y, y0, _i, _len, _ref, _ref1, _ref2, _ref3;
+    datum = data[0];
+    if (this.isObject(datum)) {
+      key = Object.keys(datum)[0];
+      this.key1 = key;
+      this.key2 = "";
+      data = data.map(function(d) {
+        return d[key];
+      });
+    }
+    _ref = this.getExtent(data), min = _ref[0], max = _ref[1];
+    if (!this.bins) {
+      width = this.width - this.getMargin() * this.width;
+      this.bins = Math.floor(width / this.targetBinWidth);
+    }
+    h = this.getHistogram(data, min, max, this.bins);
+    _ref1 = this.getExtent(h), countMin = _ref1[0], countMax = _ref1[1];
+    this.extents = {
+      xmin: min,
+      xmax: max,
+      ymin: countMin,
+      ymax: countMax
+    };
+    margin = this.getMargin();
+    clipspaceSize = 2.0 - 2 * margin;
+    clipspaceLower = -1.0 + margin;
+    clipspaceUpper = 1.0 - margin;
+    clipspaceBinWidth = clipspaceSize / this.bins;
+    _ref2 = this.getExtent(h), histMin = _ref2[0], histMax = _ref2[1];
+    vertexSize = 2;
+    nVertices = 6 * this.bins;
+    vertices = new Float32Array(vertexSize * nVertices);
+    x = -1.0 + margin;
+    y = y0 = -1.0 + margin;
+    for (index = _i = 0, _len = h.length; _i < _len; index = ++_i) {
+      value = h[index];
+      i = 12 * index;
+      vertices[i + 0] = x;
+      vertices[i + 1] = y0;
+      vertices[i + 2] = x;
+      vertices[i + 3] = (clipspaceUpper - clipspaceLower) * value / histMax + clipspaceLower;
+      vertices[i + 4] = x + clipspaceBinWidth;
+      vertices[i + 5] = y0;
+      vertices[i + 6] = vertices[i + 4];
+      vertices[i + 7] = vertices[i + 5];
+      vertices[i + 8] = vertices[i + 4];
+      vertices[i + 9] = vertices[i + 3];
+      vertices[i + 10] = vertices[i + 2];
+      vertices[i + 11] = vertices[i + 3];
+      x += clipspaceBinWidth;
+    }
+    this.gl.useProgram(this.programs.ruse);
+    _ref3 = this.delegateBuffers(), initialBuffer = _ref3[0], initialAttribute = _ref3[1], finalBuffer = _ref3[2], finalAttribute = _ref3[3];
+    if (!this.hasData) {
+      this.setInitialBuffer(initialBuffer, initialAttribute, vertexSize, nVertices, vertices);
+    }
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, finalBuffer);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
+    finalBuffer.itemSize = vertexSize;
+    finalBuffer.numItems = nVertices;
+    this.gl.vertexAttribPointer(finalAttribute, finalBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
+    this.hasData = true;
+    this.drawMode = this.gl.TRIANGLES;
+    this.drawAxes();
+    return this.animate();
+  };
+
+  Ruse = this.astro.Ruse;
+
+  Ruse.prototype.scatter2D = function(data) {
+    var datum, finalAttribute, finalBuffer, i, index, initialAttribute, initialBuffer, margin, max1, max2, min1, min2, nVertices, range1, range2, val1, val2, vertexSize, vertices, _i, _len, _ref, _ref1;
+    this.gl.useProgram(this.programs.ruse);
+    margin = this.getMargin();
+    vertexSize = 2;
+    nVertices = data.length;
+    vertices = new Float32Array(vertexSize * nVertices);
+    _ref = Object.keys(data[0]), this.key1 = _ref[0], this.key2 = _ref[1];
+    i = nVertices;
+    min1 = max1 = data[i - 1][this.key1];
+    min2 = max2 = data[i - 1][this.key2];
+    while (i--) {
+      val1 = data[i][this.key1];
+      val2 = data[i][this.key2];
+      if (val1 < min1) {
+        min1 = val1;
+      }
+      if (val1 > max1) {
+        max1 = val1;
+      }
+      if (val2 < min2) {
+        min2 = val2;
+      }
+      if (val2 > max2) {
+        max2 = val2;
+      }
+    }
+    this.extents = {
+      xmin: min1,
+      xmax: max1,
+      ymin: min2,
+      ymax: max2
+    };
+    this.gl.uniform3f(this.uMinimum, min1, min2, 0);
+    this.gl.uniform3f(this.uMaximum, max1, max2, 1);
+    range1 = max1 - min1;
+    range2 = max2 - min2;
+    for (index = _i = 0, _len = data.length; _i < _len; index = ++_i) {
+      datum = data[index];
+      i = vertexSize * index;
+      vertices[i] = datum[this.key1];
+      vertices[i + 1] = datum[this.key2];
+    }
+    _ref1 = this.delegateBuffers(), initialBuffer = _ref1[0], initialAttribute = _ref1[1], finalBuffer = _ref1[2], finalAttribute = _ref1[3];
+    this.finalBuffer = finalBuffer;
+    if (!this.hasData) {
+      this.setInitialBuffer(initialBuffer, initialAttribute, vertexSize, nVertices, vertices);
+    }
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.finalBuffer);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
+    this.finalBuffer.itemSize = vertexSize;
+    this.finalBuffer.numItems = nVertices;
+    this.gl.vertexAttribPointer(finalAttribute, this.finalBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
+    this.hasData = true;
+    this.drawMode = this.gl.POINTS;
+    this.drawAxes();
+    return this.animate();
+  };
+
+  Ruse = this.astro.Ruse;
+
+  Ruse.prototype.scatter3D = function(data) {
+    throw "scatter3D not yet implemented";
+  };
+
   Shaders = {
-    vertex: ["attribute vec3 aPoints1;", "attribute vec3 aPoints2;", "uniform mat4 uMVMatrix;", "uniform mat4 uPMatrix;", "uniform float uMargin;", "uniform vec3 uMinimum;", "uniform vec3 uMaximum;", "uniform float uTime;", "uniform float uSwitch;", "void main(void) {", "gl_PointSize = 1.25;", "float scaleComponent = 2.0 * (1.0 - uMargin);", "float offsetComponent = (-1.0 + uMargin);", "vec3 scale = vec3(scaleComponent, scaleComponent, 0.0);", "vec3 offset = vec3(offsetComponent, offsetComponent, 0.0);", "vec3 range = uMaximum - uMinimum;", "vec3 points1 = scale / range * (aPoints1 - uMinimum) + offset;", "vec3 points2 = scale / range * (aPoints2 - uMinimum) + offset;", "vec3 vertexPosition = (1.0 - abs(uTime - uSwitch)) * points2 + abs(uTime - uSwitch) * points1;", "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);", "}"].join("\n"),
+    vertex: ["attribute vec3 aPoints1;", "attribute vec3 aPoints2;", "uniform mat4 uMVMatrix;", "uniform mat4 uPMatrix;", "uniform float uMargin;", "uniform vec3 uMinimum;", "uniform vec3 uMaximum;", "uniform float uTime;", "uniform float uSwitch;", "void main(void) {", "gl_PointSize = 1.25;", "float scaleComponent = 2.0 * (1.0 - uMargin);", "float offsetComponent = (uMargin - 1.0);", "vec3 scale = vec3(scaleComponent, scaleComponent, 0.0);", "vec3 offset = vec3(offsetComponent, offsetComponent, 0.0);", "vec3 range = uMaximum - uMinimum;", "vec3 points1 = scale / range * (aPoints1 - uMinimum) + offset;", "vec3 points2 = scale / range * (aPoints2 - uMinimum) + offset;", "vec3 vertexPosition = (1.0 - abs(uTime - uSwitch)) * points2 + abs(uTime - uSwitch) * points1;", "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);", "}"].join("\n"),
     fragment: ["precision mediump float;", "void main(void) {", "gl_FragColor = vec4(0.0, 0.4431, 0.8980, 1.0);", "}"].join("\n")
   };
 

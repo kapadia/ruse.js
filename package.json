@@ -17,6 +17,9 @@
   },
   "_dependencyOrder": [
     "Ruse",
+    "Histogram",
+    "Scatter2D",
+    "Scatter3D",
     "Shaders"
   ]
 }
