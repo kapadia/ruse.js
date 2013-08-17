@@ -8,6 +8,8 @@ Shaders =
     "uniform mat4 uMVMatrix;"
     "uniform mat4 uPMatrix;"
     
+    "uniform float uMargin;"
+    
     "uniform vec3 uMinimum;"
     "uniform vec3 uMaximum;"
     
@@ -17,12 +19,15 @@ Shaders =
     "void main(void) {"
         "gl_PointSize = 1.25;"
         
-        "vec3 scale = vec3(2.0, 2.0, 0.0);"
-        "vec3 offset = vec3(1.0, 1.0, 0.0);"
+        "float scaleComponent = 2.0 * (1.0 - uMargin);"
+        "float offsetComponent = (-1.0 + uMargin);"
+        
+        "vec3 scale = vec3(scaleComponent, scaleComponent, 0.0);"
+        "vec3 offset = vec3(offsetComponent, offsetComponent, 0.0);"
         "vec3 range = uMaximum - uMinimum;"
         
-        "vec3 points1 = scale / range * (aPoints1 - uMinimum) - offset;"
-        "vec3 points2 = scale / range * (aPoints2 - uMinimum) - offset;"
+        "vec3 points1 = scale / range * (aPoints1 - uMinimum) + offset;"
+        "vec3 points2 = scale / range * (aPoints2 - uMinimum) + offset;"
         
         "vec3 vertexPosition = (1.0 - abs(uTime - uSwitch)) * points2 + abs(uTime - uSwitch) * points1;"
         "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);"

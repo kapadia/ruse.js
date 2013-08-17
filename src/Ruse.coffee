@@ -104,6 +104,25 @@ class Ruse
   
   constructor: (arg, width, height) ->
     
+    # Plot style parameters
+    @margin = 0.02  # percentage
+    @fontSize = 10
+    @tickFontSize = 9
+    @fontFamily = "Helvetica"
+    @axisPadding = 4
+    @xTicks = 6
+    @yTicks = 6
+    @xTickSize = 4
+    @yTickSize = 4
+    @tickDecimals = 3
+    
+    # Plot parameters
+    @targetBinWidth = 1  # pixel units
+    @bins = null
+    @drawMode = null
+    @extents = null
+    @hasData = false
+    
     # Either initialize a WebGL context or utilize an existing one
     s = arg.constructor.toString()
     if s.indexOf('WebGLRenderingContext') > -1 or s.indexOf('rawgl') > -1
@@ -146,6 +165,7 @@ class Ruse
     @uTime = @gl.getUniformLocation(@programs.ruse, "uTime")
     @uSwitch = @gl.getUniformLocation(@programs.ruse, "uSwitch")
     
+    @uMargin = @gl.getUniformLocation(@programs.ruse, "uMargin")
     @uMinimum = @gl.getUniformLocation(@programs.ruse, "uMinimum")
     @uMaximum = @gl.getUniformLocation(@programs.ruse, "uMaximum")
     
@@ -153,6 +173,7 @@ class Ruse
     @switch = 0
     @gl.uniform1f(@uTime, 0)
     @gl.uniform1f(@uSwitch, @switch)
+    @gl.uniform1f(@uMargin, @getMargin())
     
     # Set up camera parameters
     @pMatrix = mat4.create()
@@ -174,25 +195,6 @@ class Ruse
     @state1Buffer = @gl.createBuffer()
     @state2Buffer = @gl.createBuffer()
     @finalBuffer = @state2Buffer
-    
-    # Plot style parameters
-    @margin = 0.02  # percentage
-    @fontSize = 10
-    @tickFontSize = 9
-    @fontFamily = "Helvetica"
-    @axisPadding = 4
-    @xTicks = 6
-    @yTicks = 6
-    @xTickSize = 4
-    @yTickSize = 4
-    @tickDecimals = 3
-    
-    # Plot parameters
-    @targetBinWidth = 1  # pixel units
-    @bins = null
-    @drawMode = null
-    @extents = null
-    @hasData = false
   
   #
   # Draw functions

@@ -98,6 +98,21 @@
 
     function Ruse(arg, width, height) {
       var s, shaders;
+      this.margin = 0.02;
+      this.fontSize = 10;
+      this.tickFontSize = 9;
+      this.fontFamily = "Helvetica";
+      this.axisPadding = 4;
+      this.xTicks = 6;
+      this.yTicks = 6;
+      this.xTickSize = 4;
+      this.yTickSize = 4;
+      this.tickDecimals = 3;
+      this.targetBinWidth = 1;
+      this.bins = null;
+      this.drawMode = null;
+      this.extents = null;
+      this.hasData = false;
       s = arg.constructor.toString();
       if (s.indexOf('WebGLRenderingContext') > -1 || s.indexOf('rawgl') > -1) {
         this.gl = arg;
@@ -130,11 +145,13 @@
       this.programs["ruse"] = this._createProgram(this.gl, shaders.vertex, shaders.fragment);
       this.uTime = this.gl.getUniformLocation(this.programs.ruse, "uTime");
       this.uSwitch = this.gl.getUniformLocation(this.programs.ruse, "uSwitch");
+      this.uMargin = this.gl.getUniformLocation(this.programs.ruse, "uMargin");
       this.uMinimum = this.gl.getUniformLocation(this.programs.ruse, "uMinimum");
       this.uMaximum = this.gl.getUniformLocation(this.programs.ruse, "uMaximum");
       this["switch"] = 0;
       this.gl.uniform1f(this.uTime, 0);
       this.gl.uniform1f(this.uSwitch, this["switch"]);
+      this.gl.uniform1f(this.uMargin, this.getMargin());
       this.pMatrix = mat4.create();
       this.mvMatrix = mat4.create();
       this.rotationMatrix = mat4.create();
@@ -150,21 +167,6 @@
       this.state1Buffer = this.gl.createBuffer();
       this.state2Buffer = this.gl.createBuffer();
       this.finalBuffer = this.state2Buffer;
-      this.margin = 0.02;
-      this.fontSize = 10;
-      this.tickFontSize = 9;
-      this.fontFamily = "Helvetica";
-      this.axisPadding = 4;
-      this.xTicks = 6;
-      this.yTicks = 6;
-      this.xTickSize = 4;
-      this.yTickSize = 4;
-      this.tickDecimals = 3;
-      this.targetBinWidth = 1;
-      this.bins = null;
-      this.drawMode = null;
-      this.extents = null;
-      this.hasData = false;
     }
 
     Ruse.prototype.draw = function() {
@@ -592,7 +594,7 @@
   this.astro.Ruse.version = '0.1.0';
 
   Shaders = {
-    vertex: ["attribute vec3 aPoints1;", "attribute vec3 aPoints2;", "uniform mat4 uMVMatrix;", "uniform mat4 uPMatrix;", "uniform vec3 uMinimum;", "uniform vec3 uMaximum;", "uniform float uTime;", "uniform float uSwitch;", "void main(void) {", "gl_PointSize = 1.25;", "vec3 scale = vec3(2.0, 2.0, 0.0);", "vec3 offset = vec3(1.0, 1.0, 0.0);", "vec3 range = uMaximum - uMinimum;", "vec3 points1 = scale / range * (aPoints1 - uMinimum) - offset;", "vec3 points2 = scale / range * (aPoints2 - uMinimum) - offset;", "vec3 vertexPosition = (1.0 - abs(uTime - uSwitch)) * points2 + abs(uTime - uSwitch) * points1;", "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);", "}"].join("\n"),
+    vertex: ["attribute vec3 aPoints1;", "attribute vec3 aPoints2;", "uniform mat4 uMVMatrix;", "uniform mat4 uPMatrix;", "uniform float uMargin;", "uniform vec3 uMinimum;", "uniform vec3 uMaximum;", "uniform float uTime;", "uniform float uSwitch;", "void main(void) {", "gl_PointSize = 1.25;", "float scaleComponent = 2.0 * (1.0 - uMargin);", "float offsetComponent = (-1.0 + uMargin);", "vec3 scale = vec3(scaleComponent, scaleComponent, 0.0);", "vec3 offset = vec3(offsetComponent, offsetComponent, 0.0);", "vec3 range = uMaximum - uMinimum;", "vec3 points1 = scale / range * (aPoints1 - uMinimum) + offset;", "vec3 points2 = scale / range * (aPoints2 - uMinimum) + offset;", "vec3 vertexPosition = (1.0 - abs(uTime - uSwitch)) * points2 + abs(uTime - uSwitch) * points1;", "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);", "}"].join("\n"),
     fragment: ["precision mediump float;", "void main(void) {", "gl_FragColor = vec4(0.0, 0.4431, 0.8980, 1.0);", "}"].join("\n")
   };
 
