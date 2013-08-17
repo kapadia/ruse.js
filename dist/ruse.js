@@ -130,6 +130,8 @@
       this.programs["ruse"] = this._createProgram(this.gl, shaders.vertex, shaders.fragment);
       this.uTime = this.gl.getUniformLocation(this.programs.ruse, "uTime");
       this.uSwitch = this.gl.getUniformLocation(this.programs.ruse, "uSwitch");
+      this.uMinimum = this.gl.getUniformLocation(this.programs.ruse, "uMinimum");
+      this.uMaximum = this.gl.getUniformLocation(this.programs.ruse, "uMaximum");
       this["switch"] = 0;
       this.gl.uniform1f(this.uTime, 0);
       this.gl.uniform1f(this.uSwitch, this["switch"]);
@@ -257,13 +259,12 @@
     };
 
     Ruse.prototype.setInitialBuffer = function(buffer, attribute, vertexSize, nVertices, vertices) {
-      var index, initialVertices, margin, value, _i, _len;
-      margin = this.getMargin();
+      var index, initialVertices, value, _i, _len;
       initialVertices = new Float32Array(vertexSize * nVertices);
       for (index = _i = 0, _len = vertices.length; _i < _len; index = _i += 2) {
         value = vertices[index];
         initialVertices[index] = vertices[index];
-        initialVertices[index + 1] = -1.0 + margin;
+        initialVertices[index + 1] = -1.0;
       }
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
       this.gl.bufferData(this.gl.ARRAY_BUFFER, initialVertices, this.gl.STATIC_DRAW);
@@ -529,15 +530,15 @@
         ymin: min2,
         ymax: max2
       };
+      this.gl.uniform3f(this.uMinimum, min1, min2, 0);
+      this.gl.uniform3f(this.uMaximum, max1, max2, 1);
       range1 = max1 - min1;
       range2 = max2 - min2;
       for (index = _i = 0, _len = data.length; _i < _len; index = ++_i) {
         datum = data[index];
         i = vertexSize * index;
-        val1 = datum[this.key1];
-        val2 = datum[this.key2];
-        vertices[i] = 2 * (1 - margin) / range1 * (val1 - min1) - 1 + margin;
-        vertices[i + 1] = 2 * (1 - margin) / range2 * (val2 - min2) - 1 + margin;
+        vertices[i] = datum[this.key1];
+        vertices[i + 1] = datum[this.key2];
       }
       _ref1 = this.delegateBuffers(), initialBuffer = _ref1[0], initialAttribute = _ref1[1], finalBuffer = _ref1[2], finalAttribute = _ref1[3];
       this.finalBuffer = finalBuffer;
@@ -591,7 +592,7 @@
   this.astro.Ruse.version = '0.1.0';
 
   Shaders = {
-    vertex: ["attribute vec3 aPoints1;", "attribute vec3 aPoints2;", "uniform mat4 uMVMatrix;", "uniform mat4 uPMatrix;", "uniform float uTime;", "uniform float uSwitch;", "void main(void) {", "gl_PointSize = 1.25;", "vec3 vertexPosition = (1.0 - abs(uTime - uSwitch)) * aPoints2 + abs(uTime - uSwitch) * aPoints1;", "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);", "}"].join("\n"),
+    vertex: ["attribute vec3 aPoints1;", "attribute vec3 aPoints2;", "uniform mat4 uMVMatrix;", "uniform mat4 uPMatrix;", "uniform vec3 uMinimum;", "uniform vec3 uMaximum;", "uniform float uTime;", "uniform float uSwitch;", "void main(void) {", "gl_PointSize = 1.25;", "vec3 points1 = vec3(2.0, 2.0, 0.0) / (uMaximum - uMinimum) * (aPoints1 - uMinimum) - vec3(1.0, 1.0, 0.0);", "vec3 points2 = vec3(2.0, 2.0, 0.0) / (uMaximum - uMinimum) * (aPoints2 - uMinimum) - vec3(1.0, 1.0, 0.0);", "vec3 vertexPosition = (1.0 - abs(uTime - uSwitch)) * points2 + abs(uTime - uSwitch) * points1;", "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);", "}"].join("\n"),
     fragment: ["precision mediump float;", "void main(void) {", "gl_FragColor = vec4(0.0, 0.4431, 0.8980, 1.0);", "}"].join("\n")
   };
 

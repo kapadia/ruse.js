@@ -146,6 +146,9 @@ class Ruse
     @uTime = @gl.getUniformLocation(@programs.ruse, "uTime")
     @uSwitch = @gl.getUniformLocation(@programs.ruse, "uSwitch")
     
+    @uMinimum = @gl.getUniformLocation(@programs.ruse, "uMinimum")
+    @uMaximum = @gl.getUniformLocation(@programs.ruse, "uMaximum")
+    
     # Set initial values for uniforms
     @switch = 0
     @gl.uniform1f(@uTime, 0)
@@ -318,13 +321,11 @@ class Ruse
   
   # Sets an initial state for the first buffer.  Only called once.
   setInitialBuffer: (buffer, attribute, vertexSize, nVertices, vertices) ->
-    margin = @getMargin()
-    
     initialVertices = new Float32Array(vertexSize * nVertices)
     
     for value, index in vertices by 2
       initialVertices[index] = vertices[index]
-      initialVertices[index + 1] = -1.0 + margin
+      initialVertices[index + 1] = -1.0
       
     @gl.bindBuffer(@gl.ARRAY_BUFFER, buffer)
     @gl.bufferData(@gl.ARRAY_BUFFER, initialVertices, @gl.STATIC_DRAW)
@@ -616,16 +617,18 @@ class Ruse
       ymin: min2
       ymax: max2
     
+    # Send extents to GPU
+    @gl.uniform3f(@uMinimum, min1, min2, 0)
+    @gl.uniform3f(@uMaximum, max1, max2, 1)
+    
     range1 = max1 - min1
     range2 = max2 - min2
     
     for datum, index in data
       i = vertexSize * index
-      val1 = datum[@key1]
-      val2 = datum[@key2]
       
-      vertices[i] = 2 * (1 - margin) / range1 * (val1 - min1) - 1 + margin
-      vertices[i + 1] = 2 * (1 - margin) / range2 * (val2 - min2) - 1 + margin
+      vertices[i] = datum[@key1]
+      vertices[i + 1] = datum[@key2]
     
     [initialBuffer, initialAttribute, finalBuffer, finalAttribute] = @delegateBuffers()
     @finalBuffer = finalBuffer
