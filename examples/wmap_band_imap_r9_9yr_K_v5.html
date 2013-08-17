@@ -1,0 +1,56 @@
+<html>
+<head>
+  <title>Two Dimensional Scatter Plot Example</title>
+  <link rel="stylesheet" href="astrojs.css" type="text/css" charset="utf-8">
+  <!-- <style>
+  canvas {
+    border: 1px solid red;
+  }
+  </style> -->
+  <script type="text/javascript" src="lib/gl-matrix.js"></script>
+  <script type="text/javascript" src="../dist/ruse.js"></script>
+  
+  <script type="text/javascript" src="lib/fits.js"></script>
+  
+  <script type="text/javascript">
+  
+  function main() {
+    
+    // Pretend we already have a gl context running
+    var container = document.querySelector(".container");
+    var status = document.querySelector(".status");
+    
+    // Initialize a ruse (aka plot) using an existing gl context
+    var ruse = new astro.Ruse(container, 900, 550);
+    var path = "data/wmap_band_imap_r9_9yr_K_v5.fits";
+    
+    new astro.FITS(path, function(f) {
+      var table = f.getDataUnit();
+      var header = f.getHeader();
+      
+      var cols = table.columns;
+      
+      table.getRows(0, table.rows, function(rows) {
+        status.textContent = "plotted " + table.rows + " points";
+        
+        ruse.plot(rows)
+        window.ruse = ruse;
+      });
+    });
+    
+  }
+  </script>
+  
+</head>
+
+<body onload='main()'>
+  <div class='content'>
+    <h3>wmap_band_imap_r9_9yr_K_v5</h3>
+    <span class='status'>waiting for data ...</span>
+    
+    
+    <div class='container'>
+    </div>
+  </div>
+</body>
+</html>
