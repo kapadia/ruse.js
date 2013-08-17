@@ -17,8 +17,12 @@ Shaders =
     "void main(void) {"
         "gl_PointSize = 1.25;"
         
-        "vec3 points1 = vec3(2.0, 2.0, 0.0) / (uMaximum - uMinimum) * (aPoints1 - uMinimum) - vec3(1.0, 1.0, 0.0);"
-        "vec3 points2 = vec3(2.0, 2.0, 0.0) / (uMaximum - uMinimum) * (aPoints2 - uMinimum) - vec3(1.0, 1.0, 0.0);"
+        "vec3 scale = vec3(2.0, 2.0, 0.0);"
+        "vec3 offset = vec3(1.0, 1.0, 0.0);"
+        "vec3 range = uMaximum - uMinimum;"
+        
+        "vec3 points1 = scale / range * (aPoints1 - uMinimum) - offset;"
+        "vec3 points2 = scale / range * (aPoints2 - uMinimum) - offset;"
         
         "vec3 vertexPosition = (1.0 - abs(uTime - uSwitch)) * points2 + abs(uTime - uSwitch) * points1;"
         "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);"
