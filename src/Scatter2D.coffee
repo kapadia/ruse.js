@@ -35,9 +35,16 @@ Ruse::scatter2D = (data) ->
     ymin: min2
     ymax: max2
   
-  # Send extents to GPU
-  @gl.uniform3f(@uMinimum, min1, min2, 0)
-  @gl.uniform3f(@uMaximum, max1, max2, 1)
+  # Update extent on GPU
+  if @switch is 0
+    uMinimum = @uMinimum1
+    uMaximum = @uMaximum1
+  else
+    uMinimum = @uMinimum2
+    uMaximum = @uMaximum2
+  
+  @gl.uniform3f(uMinimum, min1, min2, 0)
+  @gl.uniform3f(uMaximum, max1, max2, 1)
   
   range1 = max1 - min1
   range2 = max2 - min2
@@ -51,9 +58,17 @@ Ruse::scatter2D = (data) ->
   [initialBuffer, initialAttribute, finalBuffer, finalAttribute] = @delegateBuffers()
   @finalBuffer = finalBuffer
   
-  # Populate initial buffer for animation
   unless @hasData
+    
+    # Populate initial buffer for animation
     @setInitialBuffer(initialBuffer, initialAttribute, vertexSize, nVertices, vertices)
+    
+    # Initially send same extent to GPU for each phase
+    @gl.uniform3f(@uMinimum1, min1, min2, 0)
+    @gl.uniform3f(@uMaximum1, max1, max2, 1)
+    
+    @gl.uniform3f(@uMinimum2, min1, min2, 0)
+    @gl.uniform3f(@uMaximum2, max1, max2, 1)
   
   @gl.bindBuffer(@gl.ARRAY_BUFFER, @finalBuffer)
   @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)

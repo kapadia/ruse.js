@@ -10,8 +10,11 @@ Shaders =
     
     "uniform float uMargin;"
     
-    "uniform vec3 uMinimum;"
-    "uniform vec3 uMaximum;"
+    "uniform vec3 uMinimum1;"
+    "uniform vec3 uMaximum1;"
+    
+    "uniform vec3 uMinimum2;"
+    "uniform vec3 uMaximum2;"
     
     "uniform float uTime;"
     "uniform float uSwitch;"
@@ -24,10 +27,12 @@ Shaders =
         
         "vec3 scale = vec3(scaleComponent, scaleComponent, 0.0);"
         "vec3 offset = vec3(offsetComponent, offsetComponent, 0.0);"
-        "vec3 range = uMaximum - uMinimum;"
         
-        "vec3 points1 = scale / range * (aPoints1 - uMinimum) + offset;"
-        "vec3 points2 = scale / range * (aPoints2 - uMinimum) + offset;"
+        "vec3 range1 = uMaximum1 - uMinimum1;"
+        "vec3 range2 = uMaximum2 - uMinimum2;"
+        
+        "vec3 points1 = scale / range1 * (aPoints1 - uMinimum1) + offset;"
+        "vec3 points2 = scale / range2 * (aPoints2 - uMinimum2) + offset;"
         
         "vec3 vertexPosition = (1.0 - abs(uTime - uSwitch)) * points2 + abs(uTime - uSwitch) * points1;"
         "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);"
@@ -36,7 +41,7 @@ Shaders =
   
   fragment: [
     "precision mediump float;"
-  
+    
     "void main(void) {"
       "gl_FragColor = vec4(0.0, 0.4431, 0.8980, 1.0);"
     "}"

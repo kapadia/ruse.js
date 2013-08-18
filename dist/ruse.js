@@ -146,8 +146,10 @@
       this.uTime = this.gl.getUniformLocation(this.programs.ruse, "uTime");
       this.uSwitch = this.gl.getUniformLocation(this.programs.ruse, "uSwitch");
       this.uMargin = this.gl.getUniformLocation(this.programs.ruse, "uMargin");
-      this.uMinimum = this.gl.getUniformLocation(this.programs.ruse, "uMinimum");
-      this.uMaximum = this.gl.getUniformLocation(this.programs.ruse, "uMaximum");
+      this.uMinimum1 = this.gl.getUniformLocation(this.programs.ruse, "uMinimum1");
+      this.uMaximum1 = this.gl.getUniformLocation(this.programs.ruse, "uMaximum1");
+      this.uMinimum2 = this.gl.getUniformLocation(this.programs.ruse, "uMinimum2");
+      this.uMaximum2 = this.gl.getUniformLocation(this.programs.ruse, "uMaximum2");
       this["switch"] = 0;
       this.gl.uniform1f(this.uTime, 0);
       this.gl.uniform1f(this.uSwitch, this["switch"]);
@@ -266,7 +268,7 @@
       for (index = _i = 0, _len = vertices.length; _i < _len; index = _i += 2) {
         value = vertices[index];
         initialVertices[index] = vertices[index];
-        initialVertices[index + 1] = -1.0;
+        initialVertices[index + 1] = -1.0 + this.getMargin();
       }
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, buffer);
       this.gl.bufferData(this.gl.ARRAY_BUFFER, initialVertices, this.gl.STATIC_DRAW);
@@ -416,6 +418,18 @@
       throw "Input data not recognized by Ruse.";
     };
 
+    Ruse.prototype.step = function(i) {
+      this.gl.uniform1f(this.uTime, i / 45);
+      return this.draw();
+    };
+
+    Ruse.prototype.reset = function() {
+      this["switch"] = this["switch"] === 0 ? 1 : 0;
+      this.gl.uniform1f(this.uTime, 0);
+      this.gl.uniform1f(this.uSwitch, this["switch"]);
+      return this.draw();
+    };
+
     Ruse.prototype.animate = function() {
       var i, intervalId,
         _this = this;
@@ -540,7 +554,7 @@
   Ruse = this.astro.Ruse;
 
   Ruse.prototype.scatter2D = function(data) {
-    var datum, finalAttribute, finalBuffer, i, index, initialAttribute, initialBuffer, margin, max1, max2, min1, min2, nVertices, range1, range2, val1, val2, vertexSize, vertices, _i, _len, _ref, _ref1;
+    var datum, finalAttribute, finalBuffer, i, index, initialAttribute, initialBuffer, margin, max1, max2, min1, min2, nVertices, range1, range2, uMaximum, uMinimum, val1, val2, vertexSize, vertices, _i, _len, _ref, _ref1;
     this.gl.useProgram(this.programs.ruse);
     margin = this.getMargin();
     vertexSize = 2;
@@ -572,8 +586,15 @@
       ymin: min2,
       ymax: max2
     };
-    this.gl.uniform3f(this.uMinimum, min1, min2, 0);
-    this.gl.uniform3f(this.uMaximum, max1, max2, 1);
+    if (this["switch"] === 0) {
+      uMinimum = this.uMinimum1;
+      uMaximum = this.uMaximum1;
+    } else {
+      uMinimum = this.uMinimum2;
+      uMaximum = this.uMaximum2;
+    }
+    this.gl.uniform3f(uMinimum, min1, min2, 0);
+    this.gl.uniform3f(uMaximum, max1, max2, 1);
     range1 = max1 - min1;
     range2 = max2 - min2;
     for (index = _i = 0, _len = data.length; _i < _len; index = ++_i) {
@@ -586,6 +607,10 @@
     this.finalBuffer = finalBuffer;
     if (!this.hasData) {
       this.setInitialBuffer(initialBuffer, initialAttribute, vertexSize, nVertices, vertices);
+      this.gl.uniform3f(this.uMinimum1, min1, min2, 0);
+      this.gl.uniform3f(this.uMaximum1, max1, max2, 1);
+      this.gl.uniform3f(this.uMinimum2, min1, min2, 0);
+      this.gl.uniform3f(this.uMaximum2, max1, max2, 1);
     }
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.finalBuffer);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
@@ -605,7 +630,7 @@
   };
 
   Shaders = {
-    vertex: ["attribute vec3 aPoints1;", "attribute vec3 aPoints2;", "uniform mat4 uMVMatrix;", "uniform mat4 uPMatrix;", "uniform float uMargin;", "uniform vec3 uMinimum;", "uniform vec3 uMaximum;", "uniform float uTime;", "uniform float uSwitch;", "void main(void) {", "gl_PointSize = 1.25;", "float scaleComponent = 2.0 * (1.0 - uMargin);", "float offsetComponent = (uMargin - 1.0);", "vec3 scale = vec3(scaleComponent, scaleComponent, 0.0);", "vec3 offset = vec3(offsetComponent, offsetComponent, 0.0);", "vec3 range = uMaximum - uMinimum;", "vec3 points1 = scale / range * (aPoints1 - uMinimum) + offset;", "vec3 points2 = scale / range * (aPoints2 - uMinimum) + offset;", "vec3 vertexPosition = (1.0 - abs(uTime - uSwitch)) * points2 + abs(uTime - uSwitch) * points1;", "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);", "}"].join("\n"),
+    vertex: ["attribute vec3 aPoints1;", "attribute vec3 aPoints2;", "uniform mat4 uMVMatrix;", "uniform mat4 uPMatrix;", "uniform float uMargin;", "uniform vec3 uMinimum1;", "uniform vec3 uMaximum1;", "uniform vec3 uMinimum2;", "uniform vec3 uMaximum2;", "uniform float uTime;", "uniform float uSwitch;", "void main(void) {", "gl_PointSize = 1.25;", "float scaleComponent = 2.0 * (1.0 - uMargin);", "float offsetComponent = (uMargin - 1.0);", "vec3 scale = vec3(scaleComponent, scaleComponent, 0.0);", "vec3 offset = vec3(offsetComponent, offsetComponent, 0.0);", "vec3 range1 = uMaximum1 - uMinimum1;", "vec3 range2 = uMaximum2 - uMinimum2;", "vec3 points1 = scale / range1 * (aPoints1 - uMinimum1) + offset;", "vec3 points2 = scale / range2 * (aPoints2 - uMinimum2) + offset;", "vec3 vertexPosition = (1.0 - abs(uTime - uSwitch)) * points2 + abs(uTime - uSwitch) * points1;", "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);", "}"].join("\n"),
     fragment: ["precision mediump float;", "void main(void) {", "gl_FragColor = vec4(0.0, 0.4431, 0.8980, 1.0);", "}"].join("\n")
   };
 

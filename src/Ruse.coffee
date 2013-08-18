@@ -166,14 +166,17 @@ class Ruse
     @uSwitch = @gl.getUniformLocation(@programs.ruse, "uSwitch")
     
     @uMargin = @gl.getUniformLocation(@programs.ruse, "uMargin")
-    @uMinimum = @gl.getUniformLocation(@programs.ruse, "uMinimum")
-    @uMaximum = @gl.getUniformLocation(@programs.ruse, "uMaximum")
+    
+    @uMinimum1 = @gl.getUniformLocation(@programs.ruse, "uMinimum1")
+    @uMaximum1 = @gl.getUniformLocation(@programs.ruse, "uMaximum1")
+    @uMinimum2 = @gl.getUniformLocation(@programs.ruse, "uMinimum2")
+    @uMaximum2 = @gl.getUniformLocation(@programs.ruse, "uMaximum2")
     
     # Set initial values for uniforms
     @switch = 0
     @gl.uniform1f(@uTime, 0)
     @gl.uniform1f(@uSwitch, @switch)
-    @gl.uniform1f(@uMargin, @getMargin())
+    @gl.uniform1f( @uMargin, @getMargin() )
     
     # Set up camera parameters
     @pMatrix = mat4.create()
@@ -327,7 +330,7 @@ class Ruse
     
     for value, index in vertices by 2
       initialVertices[index] = vertices[index]
-      initialVertices[index + 1] = -1.0
+      initialVertices[index + 1] = -1.0 + @getMargin()
       
     @gl.bindBuffer(@gl.ARRAY_BUFFER, buffer)
     @gl.bufferData(@gl.ARRAY_BUFFER, initialVertices, @gl.STATIC_DRAW)
@@ -468,6 +471,17 @@ class Ruse
         
     # If code gets here, then something wrong with input data
     throw "Input data not recognized by Ruse."
+  
+  step: (i) ->
+    @gl.uniform1f(@uTime, i / 45)
+    @draw()
+  
+  reset: ->
+    # Reset timer and flip switch
+    @switch = if @switch is 0 then 1 else 0
+    @gl.uniform1f(@uTime, 0)
+    @gl.uniform1f(@uSwitch, @switch)
+    @draw()
   
   animate: ->
     @gl.useProgram(@programs.ruse)
