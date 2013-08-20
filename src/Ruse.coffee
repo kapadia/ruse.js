@@ -75,25 +75,39 @@ class Ruse
       
       x = e.clientX
       y = e.clientY
-      
+
       deltaX = x - @xOldOffset
       deltaY = y - @yOldOffset
-      
-      deltaXP = @x2xp(deltaX)
-      deltaYP = @y2yp(deltaY)
-      
-      delta = [deltaXP, deltaYP, 0.0]
-      mat4.translate(@mvMatrix, @mvMatrix, delta)
-      
+
+      rotationMatrix = mat4.create()
+      mat4.identity(rotationMatrix)
+      mat4.rotateY(rotationMatrix, rotationMatrix, @_toRadians(deltaX / 4))
+      mat4.rotateX(rotationMatrix, rotationMatrix, @_toRadians(deltaY / 4))
+      mat4.multiply(@rotationMatrix, rotationMatrix, @rotationMatrix)
+
       @xOldOffset = x
       @yOldOffset = y
-      
+
       @draw()
       
-      # Update axes too!
-      @xOffset += deltaX
-      @yOffset += deltaY
-      @drawAxes()
+      # deltaX = x - @xOldOffset
+      # deltaY = y - @yOldOffset
+      # 
+      # deltaXP = @x2xp(deltaX)
+      # deltaYP = @y2yp(deltaY)
+      # 
+      # delta = [deltaXP, deltaYP, 0.0]
+      # mat4.translate(@mvMatrix, @mvMatrix, delta)
+      # 
+      # @xOldOffset = x
+      # @yOldOffset = y
+      # 
+      # @draw()
+      # 
+      # # Update axes too!
+      # @xOffset += deltaX
+      # @yOffset += deltaY
+      # @drawAxes()
     
     @axesCanvas.onmouseout = (e) =>
       @drag = false
@@ -186,24 +200,26 @@ class Ruse
     mat4.perspective(45.0, @canvas.width / @canvas.height, 0.1, 100.0, @pMatrix)
     mat4.identity(@rotationMatrix)
     mat4.identity(@mvMatrix)
-    mat4.translate(@mvMatrix, @mvMatrix, [0.0, 0.0, 0.0])
+    mat4.translate(@mvMatrix, @mvMatrix, [0.0, 0.0, -6.0])
     
     @_setMatrices(@programs.ruse)
     
     @gl.viewport(0, 0, @width, @height)
     @gl.clear(@gl.COLOR_BUFFER_BIT | @gl.DEPTH_BUFFER_BIT)
-    @gl.clearDepth(-50.0)
-    @gl.depthFunc(@gl.GEQUAL)
+    @gl.enable(@gl.DEPTH_TEST)
     
     @state1Buffer = @gl.createBuffer()
     @state2Buffer = @gl.createBuffer()
     @finalBuffer = @state2Buffer
+    
+    @_setupMouseControls()
   
   #
   # Draw functions
   #
   
   draw: ->
+    @gl.clear(@gl.COLOR_BUFFER_BIT | @gl.DEPTH_BUFFER_BIT)
     @_setMatrices(@programs.ruse)
     @gl.drawArrays(@drawMode, 0, @finalBuffer.numItems)
   

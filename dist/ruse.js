@@ -69,7 +69,7 @@
         return _this.drag = false;
       };
       this.axesCanvas.onmousemove = function(e) {
-        var delta, deltaX, deltaXP, deltaY, deltaYP, x, y;
+        var deltaX, deltaY, rotationMatrix, x, y;
         if (!_this.drag) {
           return;
         }
@@ -77,16 +77,14 @@
         y = e.clientY;
         deltaX = x - _this.xOldOffset;
         deltaY = y - _this.yOldOffset;
-        deltaXP = _this.x2xp(deltaX);
-        deltaYP = _this.y2yp(deltaY);
-        delta = [deltaXP, deltaYP, 0.0];
-        mat4.translate(_this.mvMatrix, _this.mvMatrix, delta);
+        rotationMatrix = mat4.create();
+        mat4.identity(rotationMatrix);
+        mat4.rotateY(rotationMatrix, rotationMatrix, _this._toRadians(deltaX / 4));
+        mat4.rotateX(rotationMatrix, rotationMatrix, _this._toRadians(deltaY / 4));
+        mat4.multiply(_this.rotationMatrix, rotationMatrix, _this.rotationMatrix);
         _this.xOldOffset = x;
         _this.yOldOffset = y;
-        _this.draw();
-        _this.xOffset += deltaX;
-        _this.yOffset += deltaY;
-        return _this.drawAxes();
+        return _this.draw();
       };
       this.axesCanvas.onmouseout = function(e) {
         return _this.drag = false;
@@ -160,18 +158,19 @@
       mat4.perspective(45.0, this.canvas.width / this.canvas.height, 0.1, 100.0, this.pMatrix);
       mat4.identity(this.rotationMatrix);
       mat4.identity(this.mvMatrix);
-      mat4.translate(this.mvMatrix, this.mvMatrix, [0.0, 0.0, 0.0]);
+      mat4.translate(this.mvMatrix, this.mvMatrix, [0.0, 0.0, -6.0]);
       this._setMatrices(this.programs.ruse);
       this.gl.viewport(0, 0, this.width, this.height);
       this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-      this.gl.clearDepth(-50.0);
-      this.gl.depthFunc(this.gl.GEQUAL);
+      this.gl.enable(this.gl.DEPTH_TEST);
       this.state1Buffer = this.gl.createBuffer();
       this.state2Buffer = this.gl.createBuffer();
       this.finalBuffer = this.state2Buffer;
+      this._setupMouseControls();
     }
 
     Ruse.prototype.draw = function() {
+      this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
       this._setMatrices(this.programs.ruse);
       return this.gl.drawArrays(this.drawMode, 0, this.finalBuffer.numItems);
     };
@@ -626,7 +625,87 @@
   Ruse = this.astro.Ruse;
 
   Ruse.prototype.scatter3D = function(data) {
-    throw "scatter3D not yet implemented";
+    var datum, finalAttribute, finalBuffer, i, index, initialAttribute, initialBuffer, margin, max1, max2, max3, min1, min2, min3, nVertices, range1, range2, range3, uMaximum, uMinimum, val1, val2, val3, vertexSize, vertices, _i, _len, _ref, _ref1;
+    console.log('scatter3D');
+    this.gl.useProgram(this.programs.ruse);
+    margin = this.getMargin();
+    vertexSize = 3;
+    nVertices = data.length;
+    vertices = new Float32Array(vertexSize * nVertices);
+    _ref = Object.keys(data[0]), this.key1 = _ref[0], this.key2 = _ref[1], this.key3 = _ref[2];
+    i = nVertices;
+    min1 = max1 = data[i - 1][this.key1];
+    min2 = max2 = data[i - 1][this.key2];
+    min3 = max3 = data[i - 1][this.key3];
+    while (i--) {
+      val1 = data[i][this.key1];
+      val2 = data[i][this.key2];
+      val3 = data[i][this.key3];
+      if (val1 < min1) {
+        min1 = val1;
+      }
+      if (val1 > max1) {
+        max1 = val1;
+      }
+      if (val2 < min2) {
+        min2 = val2;
+      }
+      if (val2 > max2) {
+        max2 = val2;
+      }
+      if (val3 < min3) {
+        min3 = val3;
+      }
+      if (val3 > max3) {
+        max3 = val3;
+      }
+    }
+    this.extents = {
+      xmin: min1,
+      xmax: max1,
+      ymin: min2,
+      ymax: max2,
+      zmin: min3,
+      zmax: max3
+    };
+    if (this["switch"] === 0) {
+      uMinimum = this.uMinimum1;
+      uMaximum = this.uMaximum1;
+    } else {
+      uMinimum = this.uMinimum2;
+      uMaximum = this.uMaximum2;
+    }
+    console.log(min1, min2, min3);
+    console.log(max1, max2, max3);
+    this.gl.uniform3f(uMinimum, min1, min2, min3);
+    this.gl.uniform3f(uMaximum, max1, max2, max3);
+    range1 = max1 - min1;
+    range2 = max2 - min2;
+    range3 = max3 - min3;
+    for (index = _i = 0, _len = data.length; _i < _len; index = ++_i) {
+      datum = data[index];
+      i = vertexSize * index;
+      vertices[i] = datum[this.key1];
+      vertices[i + 1] = datum[this.key2];
+      vertices[i + 2] = datum[this.key3];
+    }
+    _ref1 = this.delegateBuffers(), initialBuffer = _ref1[0], initialAttribute = _ref1[1], finalBuffer = _ref1[2], finalAttribute = _ref1[3];
+    this.finalBuffer = finalBuffer;
+    if (!this.hasData) {
+      this.setInitialBuffer(initialBuffer, initialAttribute, vertexSize, nVertices, vertices);
+      this.gl.uniform3f(this.uMinimum1, min1, min2, min3);
+      this.gl.uniform3f(this.uMaximum1, max1, max2, max3);
+      this.gl.uniform3f(this.uMinimum2, min1, min2, min3);
+      this.gl.uniform3f(this.uMaximum2, max1, max2, max3);
+    }
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.finalBuffer);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
+    this.finalBuffer.itemSize = vertexSize;
+    this.finalBuffer.numItems = nVertices;
+    this.gl.vertexAttribPointer(finalAttribute, this.finalBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
+    this.hasData = true;
+    this.drawMode = this.gl.POINTS;
+    return this.animate();
   };
 
   Shaders = {
