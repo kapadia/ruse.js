@@ -25,7 +25,7 @@ Ruse::scatter3D = (data) ->
   
   # Add perspective when working in three dimensions
   mat4.perspective(@pMatrix, 45.0, @canvas.width / @canvas.height, 0.1, 100.0)
-  mat4.translate(@mvMatrix, @mvMatrix, [0.0, 0.0, -4.5])
+  mat4.translate(@mvMatrix, @mvMatrix, [0.0, 0.0, -1.5])
   
   @gl.useProgram(@programs.three)
   @spoofAttributes()
@@ -92,11 +92,12 @@ Ruse::scatter3D = (data) ->
   
   @gl.vertexAttribPointer(@programs.three.vertexPositionAttribute, @threeBuffer.itemSize, @gl.FLOAT, false, 0, 0)
   @_setupMouseControls()
+  console.log data
   @draw3d()
 
 Ruse::draw3d = ->
   mat4.identity(@mvMatrix)
-  mat4.translate(@mvMatrix, @mvMatrix, [0.0, 0.0, -4.5])
+  mat4.translate(@mvMatrix, @mvMatrix, [0.0, 0.0, -1.5])
   mat4.multiply(@mvMatrix, @mvMatrix, @rotationMatrix)
   
   @gl.clear(@gl.COLOR_BUFFER_BIT | @gl.DEPTH_BUFFER_BIT)

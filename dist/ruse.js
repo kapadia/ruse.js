@@ -670,7 +670,7 @@
     var datum, i, index, margin, max1, max2, max3, min1, min2, min3, nVertices, range1, range2, range3, val1, val2, val3, vertexSize, vertices, _i, _len, _ref;
     console.log('scatter3D');
     mat4.perspective(this.pMatrix, 45.0, this.canvas.width / this.canvas.height, 0.1, 100.0);
-    mat4.translate(this.mvMatrix, this.mvMatrix, [0.0, 0.0, -4.5]);
+    mat4.translate(this.mvMatrix, this.mvMatrix, [0.0, 0.0, -1.5]);
     this.gl.useProgram(this.programs.three);
     this.spoofAttributes();
     margin = this.getMargin();
@@ -731,12 +731,13 @@
     this.threeBuffer.numItems = nVertices;
     this.gl.vertexAttribPointer(this.programs.three.vertexPositionAttribute, this.threeBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
     this._setupMouseControls();
+    console.log(data);
     return this.draw3d();
   };
 
   Ruse.prototype.draw3d = function() {
     mat4.identity(this.mvMatrix);
-    mat4.translate(this.mvMatrix, this.mvMatrix, [0.0, 0.0, -4.5]);
+    mat4.translate(this.mvMatrix, this.mvMatrix, [0.0, 0.0, -1.5]);
     mat4.multiply(this.mvMatrix, this.mvMatrix, this.rotationMatrix);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
     this._setMatrices(this.programs.three);
