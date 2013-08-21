@@ -45,6 +45,32 @@ class Ruse
     program.uMVMatrix = gl.getUniformLocation(program, "uMVMatrix")
     
     return program
+    
+  _createProgram3D: (gl, vertexShader, fragmentShader) ->
+    vertexShader = @_loadShader(gl, vertexShader, gl.VERTEX_SHADER)
+    fragmentShader = @_loadShader(gl, fragmentShader, gl.FRAGMENT_SHADER)
+    
+    program = gl.createProgram()
+    
+    gl.attachShader(program, vertexShader)
+    gl.attachShader(program, fragmentShader)
+    gl.linkProgram(program)
+    
+    linked = gl.getProgramParameter(program, gl.LINK_STATUS)
+    unless linked
+      throw "Error in program linking: #{gl.getProgramInfoLog(program)}"
+      gl.deleteProgram(program)
+      return null
+      
+    gl.useProgram(program)
+    
+    program.vertexPositionAttribute = gl.getAttribLocation(program, "aVertexPosition")
+    gl.enableVertexAttribArray(program.vertexPositionAttribute)
+    
+    program.uPMatrix = gl.getUniformLocation(program, "uPMatrix")
+    program.uMVMatrix = gl.getUniformLocation(program, "uMVMatrix")
+    
+    return program
   
   _setMatrices: (program) ->
     @gl.useProgram(program)
@@ -174,8 +200,10 @@ class Ruse
     shaders = @constructor.Shaders
     @programs = {}
     @programs["ruse"] = @_createProgram(@gl, shaders.vertex, shaders.fragment)
+    @programs["three"] = @_createProgram3D(@gl, shaders.vertex3D, shaders.fragment)
     
     # Get uniforms
+    @gl.useProgram(@programs.ruse)
     @uTime = @gl.getUniformLocation(@programs.ruse, "uTime")
     @uSwitch = @gl.getUniformLocation(@programs.ruse, "uSwitch")
     
@@ -197,10 +225,9 @@ class Ruse
     @mvMatrix = mat4.create()
     @rotationMatrix = mat4.create()
     
-    mat4.perspective(45.0, @canvas.width / @canvas.height, 0.1, 100.0, @pMatrix)
+    mat4.identity(@pMatrix)
     mat4.identity(@rotationMatrix)
     mat4.identity(@mvMatrix)
-    mat4.translate(@mvMatrix, @mvMatrix, [0.0, 0.0, -6.0])
     
     @_setMatrices(@programs.ruse)
     
@@ -212,7 +239,10 @@ class Ruse
     @state2Buffer = @gl.createBuffer()
     @finalBuffer = @state2Buffer
     
-    @_setupMouseControls()
+    # Testing separate buffer for three dimensional data
+    @threeBuffer = @gl.createBuffer()
+    
+    # @_setupMouseControls()
   
   #
   # Draw functions

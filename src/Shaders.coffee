@@ -39,6 +39,20 @@ Shaders =
     "}"
   ].join("\n")
   
+  # Testing three dimensional plots with simplifed shader
+  vertex3D: [
+    "attribute vec3 aVertexPosition;"
+    
+    "uniform mat4 uMVMatrix;"
+    "uniform mat4 uPMatrix;"
+    
+    "void main(void) {"
+      "gl_PointSize = 4.25;"
+      
+      "gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);"
+    "}"
+  ].join("\n")
+  
   fragment: [
     "precision mediump float;"
     

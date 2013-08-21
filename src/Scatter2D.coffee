@@ -4,6 +4,10 @@ Ruse = @astro.Ruse
 Ruse::scatter2D = (data) ->
   @gl.useProgram(@programs.ruse)
   
+  # Remove perspective if working in two dimensions
+  mat4.identity(@pMatrix)
+  mat4.identity(@mvMatrix)
+  
   # Compute margin that incorporates spaces needed for axes labels
   margin = @getMargin()
   vertexSize = 2
