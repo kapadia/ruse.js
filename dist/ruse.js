@@ -650,24 +650,23 @@
   Ruse = this.astro.Ruse;
 
   Ruse.prototype.scatter3D = function(data) {
-    var vertices;
+    var spoof, vertices;
     console.log('scatter3D');
     mat4.perspective(this.pMatrix, 45.0, this.canvas.width / this.canvas.height, 0.1, 100.0);
-    mat4.translate(this.mvMatrix, this.mvMatrix, [0.0, 0.0, -6.0]);
-    this.pMatrix = new Float32Array([1.2071068286895752, 0, 0, 0, 0, 2.4142136573791504, 0, 0, 0, 0, -1.0020020008087158, -1, 0, 0, -0.20020020008087158, 0]);
-    this.gl.useProgram(this.programs.ruse);
-    vertices = new Float32Array([0.0, 1.0, 0.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 0.0, 1.0, 0.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 0.0, 1.0, 0.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0]);
+    mat4.translate(this.mvMatrix, this.mvMatrix, [0.0, 0.0, -4.5]);
+    this.gl.useProgram(this.programs.three);
+    spoof = new Float32Array([0, 0]);
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.state1Buffer);
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
-    this.state1Buffer.itemSize = 3;
-    this.state1Buffer.numItems = 12;
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, spoof, this.gl.STATIC_DRAW);
+    this.state1Buffer.itemSize = 2;
+    this.state1Buffer.numItems = 1;
     this.gl.vertexAttribPointer(this.programs.ruse.points1Attribute, this.state1Buffer.itemSize, this.gl.FLOAT, false, 0, 0);
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.state2Buffer);
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
-    this.state2Buffer.itemSize = 3;
-    this.state2Buffer.numItems = 12;
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, spoof, this.gl.STATIC_DRAW);
+    this.state2Buffer.itemSize = 2;
+    this.state2Buffer.numItems = 1;
     this.gl.vertexAttribPointer(this.programs.ruse.points2Attribute, this.state2Buffer.itemSize, this.gl.FLOAT, false, 0, 0);
-    this.gl.useProgram(this.programs.three);
+    vertices = new Float32Array([0.0, 1.0, 0.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 0.0, 1.0, 0.0, 1.0, -1.0, 1.0, 1.0, -1.0, -1.0, 0.0, 1.0, 0.0, 1.0, -1.0, -1.0, -1.0, -1.0, -1.0, 0.0, 1.0, 0.0, -1.0, -1.0, -1.0, -1.0, -1.0, 1.0]);
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.threeBuffer);
     this.threeBuffer.itemSize = 3;
     this.threeBuffer.numItems = 12;
@@ -675,8 +674,7 @@
     this.gl.vertexAttribPointer(this.programs.three.vertexPositionAttribute, this.threeBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
     this._setMatrices(this.programs.three);
-    this.gl.drawArrays(this.gl.POINTS, 0, this.threeBuffer.numItems);
-    return console.log('done');
+    return this.gl.drawArrays(this.gl.POINTS, 0, this.threeBuffer.numItems);
   };
 
   Shaders = {
