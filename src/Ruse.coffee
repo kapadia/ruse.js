@@ -101,20 +101,20 @@ class Ruse
       
       x = e.clientX
       y = e.clientY
-
+      
       deltaX = x - @xOldOffset
       deltaY = y - @yOldOffset
-
+      
       rotationMatrix = mat4.create()
       mat4.identity(rotationMatrix)
       mat4.rotateY(rotationMatrix, rotationMatrix, @_toRadians(deltaX / 4))
       mat4.rotateX(rotationMatrix, rotationMatrix, @_toRadians(deltaY / 4))
       mat4.multiply(@rotationMatrix, rotationMatrix, @rotationMatrix)
-
+      
       @xOldOffset = x
       @yOldOffset = y
-
-      @draw()
+      
+      @draw3d()
       
       # deltaX = x - @xOldOffset
       # deltaY = y - @yOldOffset
@@ -213,6 +213,10 @@ class Ruse
     @uMaximum1 = @gl.getUniformLocation(@programs.ruse, "uMaximum1")
     @uMinimum2 = @gl.getUniformLocation(@programs.ruse, "uMinimum2")
     @uMaximum2 = @gl.getUniformLocation(@programs.ruse, "uMaximum2")
+    
+    # NOTE: Looks like we can request uniforms despite not being on the same program
+    @uMinimum = @gl.getUniformLocation(@programs.three, "uMinimum")
+    @uMaximum = @gl.getUniformLocation(@programs.three, "uMaximum")
     
     # Set initial values for uniforms
     @switch = 0
