@@ -41,13 +41,16 @@ Shaders =
   
   # Testing three dimensional plots with simplifed shader
   vertex3D: [
-    "attribute vec3 aVertexPosition;"
+    "attribute vec3 aVertexPosition1;"
+    "attribute vec3 aVertexPosition2;"
     
     "uniform mat4 uMVMatrix;"
     "uniform mat4 uPMatrix;"
     
     "uniform vec3 uMinimum;"
     "uniform vec3 uMaximum;"
+    
+    "uniform float uTime;"
     
     "void main(void) {"
       "gl_PointSize = 1.25;"
@@ -59,9 +62,12 @@ Shaders =
       
       "vec3 range = uMaximum - uMinimum;"
       
-      "vec3 points = scale / range * (aVertexPosition - uMinimum) + offset;"
+      "vec3 vertexPosition1 = scale / range * (aVertexPosition1 - uMinimum) + offset;"
+      "vec3 vertexPosition2 = scale / range * (aVertexPosition2 - uMinimum) + offset;"
       
-      "gl_Position = uPMatrix * uMVMatrix * vec4(points, 1.0);"
+      "vec3 vertexPosition = (1.0 - uTime) * vertexPosition2 + uTime * vertexPosition1;"
+      
+      "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);"
     "}"
   ].join("\n")
   

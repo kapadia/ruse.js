@@ -21,11 +21,9 @@ Ruse::spoofAttributes = ->
 
 
 Ruse::scatter3D = (data) ->
-  console.log 'scatter3D'
   
   # Add perspective when working in three dimensions
-  mat4.perspective(@pMatrix, 45.0, @canvas.width / @canvas.height, 0.1, 100.0)
-  mat4.translate(@mvMatrix, @mvMatrix, [0.0, 0.0, -1.5])
+  mat4.perspective(@pMatrix, 45.0, 1.0, 0.1, 100.0)
   
   @gl.useProgram(@programs.three)
   @spoofAttributes()
@@ -38,6 +36,7 @@ Ruse::scatter3D = (data) ->
   
   nVertices = data.length
   vertices = new Float32Array(vertexSize * nVertices)
+  initialVertices = new Float32Array(vertexSize * nVertices)
   
   [@key1, @key2, @key3] = Object.keys(data[0])
   
@@ -80,27 +79,43 @@ Ruse::scatter3D = (data) ->
   for datum, index in data
     i = vertexSize * index
     
-    vertices[i] = datum[@key1]
-    vertices[i + 1] = datum[@key2]
+    vertices[i] = initialVertices[i] = datum[@key1]
+    vertices[i + 1] = initialVertices[i + 1] = datum[@key2]
     vertices[i + 2] = datum[@key3]
+    initialVertices[i + 2] = 0
   
-  @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer)
+  @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer1)
   @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
+  @threeBuffer1.itemSize = vertexSize
+  @threeBuffer1.numItems = nVertices
+  @gl.vertexAttribPointer(@programs.three.vertexPosition1Attribute, @threeBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
   
-  @threeBuffer.itemSize = vertexSize
-  @threeBuffer.numItems = nVertices
+  @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer2)
+  @gl.bufferData(@gl.ARRAY_BUFFER, initialVertices, @gl.STATIC_DRAW)
+  @threeBuffer2.itemSize = vertexSize
+  @threeBuffer2.numItems = nVertices
+  @gl.vertexAttribPointer(@programs.three.vertexPosition2Attribute, @threeBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
   
-  @gl.vertexAttribPointer(@programs.three.vertexPositionAttribute, @threeBuffer.itemSize, @gl.FLOAT, false, 0, 0)
   @_setupMouseControls()
-  console.log data
-  @draw3d()
+  @animate3d()
 
 Ruse::draw3d = ->
   mat4.identity(@mvMatrix)
-  mat4.translate(@mvMatrix, @mvMatrix, [0.0, 0.0, -1.5])
+  mat4.translate(@mvMatrix, @mvMatrix, [0.0, 0.0, -4.0])
   mat4.multiply(@mvMatrix, @mvMatrix, @rotationMatrix)
   
   @gl.clear(@gl.COLOR_BUFFER_BIT | @gl.DEPTH_BUFFER_BIT)
   @_setMatrices(@programs.three)
-  @gl.drawArrays(@gl.POINTS, 0, @threeBuffer.numItems)
+  @gl.drawArrays(@gl.POINTS, 0, @threeBuffer1.numItems)
   
+Ruse::animate3d = ->
+  @gl.useProgram(@programs.three)
+  
+  i = 0
+  intervalId = setInterval( =>
+    i += 1
+    @gl.uniform1f(@uTime3d, i / 250)
+    @draw3d()
+    if i is 250
+      clearInterval(intervalId)
+  , 1000 / 60)

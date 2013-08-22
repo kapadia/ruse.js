@@ -64,8 +64,11 @@ class Ruse
       
     gl.useProgram(program)
     
-    program.vertexPositionAttribute = gl.getAttribLocation(program, "aVertexPosition")
-    gl.enableVertexAttribArray(program.vertexPositionAttribute)
+    program.vertexPosition1Attribute = gl.getAttribLocation(program, "aVertexPosition1")
+    gl.enableVertexAttribArray(program.vertexPosition1Attribute)
+    
+    program.vertexPosition2Attribute = gl.getAttribLocation(program, "aVertexPosition2")
+    gl.enableVertexAttribArray(program.vertexPosition2Attribute)
     
     program.uPMatrix = gl.getUniformLocation(program, "uPMatrix")
     program.uMVMatrix = gl.getUniformLocation(program, "uMVMatrix")
@@ -217,6 +220,7 @@ class Ruse
     # NOTE: Looks like we can request uniforms despite not being on the same program
     @uMinimum = @gl.getUniformLocation(@programs.three, "uMinimum")
     @uMaximum = @gl.getUniformLocation(@programs.three, "uMaximum")
+    @uTime3d = @gl.getUniformLocation(@programs.three, "uTime")
     
     # Set initial values for uniforms
     @switch = 0
@@ -244,9 +248,8 @@ class Ruse
     @finalBuffer = @state2Buffer
     
     # Testing separate buffer for three dimensional data
-    @threeBuffer = @gl.createBuffer()
-    
-    # @_setupMouseControls()
+    @threeBuffer1 = @gl.createBuffer()
+    @threeBuffer2 = @gl.createBuffer()
   
   #
   # Draw functions

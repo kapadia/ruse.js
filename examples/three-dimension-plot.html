@@ -20,18 +20,19 @@
     var el = document.querySelector("#ruse");
     var ruse = new astro.Ruse(el, 800, 400);
     
-    var key1 = "RA";
-    var key2 = "DEC";
-    var key3 = "logNH";
+    // var key1 = "RA";
+    // var key2 = "DEC";
+    // var key3 = "logNH";
+    var key1 = "CX";
+    var key2 = "CY";
+    var key3 = "CZ";
     
-    // var path = "data/plates-dr9.fits";
-    var path = "data/dr7qso.fit";
+    var path = "data/plates-dr9.fits";
+    // var path = "data/dr7qso.fit";
     
     new astro.FITS(path, function(f) {
       var table = f.getDataUnit();
-      console.log(table);
       table.getRows(0, table.rows, function(rows) {
-        console.log(rows[0]);
         rows = rows.map(function(d) {
           datum = {};
           datum[key1] = d[key1];
