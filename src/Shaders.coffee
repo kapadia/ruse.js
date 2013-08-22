@@ -51,6 +51,7 @@ Shaders =
     "uniform vec3 uMaximum;"
     
     "uniform float uTime;"
+    "uniform float uSwitch;"
     
     "void main(void) {"
       "gl_PointSize = 1.25;"

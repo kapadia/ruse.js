@@ -165,6 +165,7 @@ class Ruse
     @drawMode = null
     @extents = null
     @hasData = false
+    @hasData3d = false
     
     # Either initialize a WebGL context or utilize an existing one
     s = arg.constructor.toString()
@@ -221,6 +222,7 @@ class Ruse
     @uMinimum = @gl.getUniformLocation(@programs.three, "uMinimum")
     @uMaximum = @gl.getUniformLocation(@programs.three, "uMaximum")
     @uTime3d = @gl.getUniformLocation(@programs.three, "uTime")
+    @uSwitch3d = @gl.getUniformLocation(@programs.three, "uSwitch")
     
     # Set initial values for uniforms
     @switch = 0

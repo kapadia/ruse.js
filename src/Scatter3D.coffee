@@ -97,15 +97,17 @@ Ruse::scatter3D = (data) ->
   @gl.vertexAttribPointer(@programs.three.vertexPosition2Attribute, @threeBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
   
   @_setupMouseControls()
+  
   @animate3d()
 
 Ruse::draw3d = ->
+  
   mat4.identity(@mvMatrix)
   mat4.translate(@mvMatrix, @mvMatrix, [0.0, 0.0, -4.0])
   mat4.multiply(@mvMatrix, @mvMatrix, @rotationMatrix)
+  @_setMatrices(@programs.three)
   
   @gl.clear(@gl.COLOR_BUFFER_BIT | @gl.DEPTH_BUFFER_BIT)
-  @_setMatrices(@programs.three)
   @gl.drawArrays(@gl.POINTS, 0, @threeBuffer1.numItems)
   
 Ruse::animate3d = ->

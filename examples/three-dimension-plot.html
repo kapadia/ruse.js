@@ -20,6 +20,11 @@
     var el = document.querySelector("#ruse");
     var ruse = new astro.Ruse(el, 800, 400);
     
+    if (ruse.gl === null) {
+      alert("Sadly this demo will be very boring since you don't have WebGL.");
+      return;
+    }
+    
     // var key1 = "RA";
     // var key2 = "DEC";
     // var key3 = "logNH";
@@ -93,15 +98,6 @@
         xAxisEl.removeAttribute('disabled');
         yAxisEl.removeAttribute('disabled');
         zAxisEl.removeAttribute('disabled');
-        
-        // rows = rows.map(function(d) {
-        //   datum = {};
-        //   datum[key1] = d[key1];
-        //   datum[key2] = d[key2];
-        //   datum[key3] = d[key3];
-        //   return datum;
-        // });
-        // ruse.plot(rows);
       });
     });
     
