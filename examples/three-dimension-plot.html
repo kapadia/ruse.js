@@ -31,16 +31,77 @@
     // var path = "data/dr7qso.fit";
     
     new astro.FITS(path, function(f) {
-      var table = f.getDataUnit();
+      var table = f.getDataUnit(1);
+      var header = f.getHeader(1);
+      
+      // Set up drop down menus
+      var xAxisEl = document.querySelector('select[class="x-axis"]');
+      var yAxisEl = document.querySelector('select[class="y-axis"]');
+      var zAxisEl = document.querySelector('select[class="z-axis"]');
+      
+      var cols = table.columns;
+      
+      // Get numerical columns
+      columns = [];
+      for (var i = 1; i < cols.length + 1; i++) {
+        form = "TFORM" + i;
+        type = "TTYPE" + i;
+        match = header.get(form).match(/(\d*)([BIJKED])/)
+        if (typeof match !== "undefined" && match !== null) {
+          columns.push(header.get(type));
+        }
+      }
+      
+      for (var i = 0; i < columns.length; i++) {
+        var optionX = document.createElement('option');
+        var optionY = document.createElement('option');
+        var optionZ = document.createElement('option');
+        
+        optionX.textContent = columns[i];
+        optionY.textContent = columns[i];
+        optionZ.textContent = columns[i];
+        
+        xAxisEl.appendChild(optionX);
+        yAxisEl.appendChild(optionY);
+        zAxisEl.appendChild(optionZ);
+      }
+      
       table.getRows(0, table.rows, function(rows) {
-        rows = rows.map(function(d) {
-          datum = {};
-          datum[key1] = d[key1];
-          datum[key2] = d[key2];
-          datum[key3] = d[key3];
-          return datum;
-        });
-        ruse.plot(rows);
+        
+        xAxisEl.onchange = function(e) {
+          var key1 = xAxisEl.value;
+          var key2 = yAxisEl.value;
+          var key3 = zAxisEl.value;
+          
+          data = rows.map(function(d) {
+            datum = {};
+            datum[key1] = d[key1];
+            datum[key2] = d[key2];
+            datum[key3] = d[key3];
+            
+            return datum;
+          });
+          ruse.plot(data);
+        }
+        yAxisEl.onchange = function(e) {
+          xAxisEl.onchange(e);
+        }
+        zAxisEl.onchange = function(e) {
+          xAxisEl.onchange(e);
+        }
+        
+        xAxisEl.removeAttribute('disabled');
+        yAxisEl.removeAttribute('disabled');
+        zAxisEl.removeAttribute('disabled');
+        
+        // rows = rows.map(function(d) {
+        //   datum = {};
+        //   datum[key1] = d[key1];
+        //   datum[key2] = d[key2];
+        //   datum[key3] = d[key3];
+        //   return datum;
+        // });
+        // ruse.plot(rows);
       });
     });
     
@@ -52,8 +113,12 @@
 <body onload='main()'>
   <div class='content'>
     <h3>Three Dimension Plot</h3>
-    <div id='ruse'>
-    </div>
+    
+    <select class='x-axis' disabled></select>
+    <select class='y-axis' disabled></select>
+    <select class='z-axis' disabled></select>
+    
+    <div id='ruse'></div>
   </div>
 </body>
 </html>

@@ -186,7 +186,7 @@ class Ruse
       @canvas.setAttribute('class', 'ruse')
       @canvas.style.position = 'absolute'
       
-      @gl = @canvas.getContext('webgl') or canvas.getContext('experimental-webgl')
+      @gl = @canvas.getContext('webgl') or @canvas.getContext('experimental-webgl')
       return null unless @gl
       
       arg.appendChild(@canvas)

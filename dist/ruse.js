@@ -150,7 +150,7 @@
         this.canvas.setAttribute('height', this.height);
         this.canvas.setAttribute('class', 'ruse');
         this.canvas.style.position = 'absolute';
-        this.gl = this.canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+        this.gl = this.canvas.getContext('webgl') || this.canvas.getContext('experimental-webgl');
         if (!this.gl) {
           return null;
         }
@@ -649,7 +649,6 @@
     this.gl.vertexAttribPointer(finalAttribute, this.finalBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
     this.hasData = true;
     this.drawMode = this.gl.POINTS;
-    this.drawAxes();
     return this.animate();
   };
 
@@ -759,9 +758,9 @@
     i = 0;
     return intervalId = setInterval(function() {
       i += 1;
-      _this.gl.uniform1f(_this.uTime3d, i / 250);
+      _this.gl.uniform1f(_this.uTime3d, i / 150);
       _this.draw3d();
-      if (i === 250) {
+      if (i === 150) {
         return clearInterval(intervalId);
       }
     }, 1000 / 60);

@@ -82,5 +82,5 @@ Ruse::scatter2D = (data) ->
   
   @hasData = true
   @drawMode = @gl.POINTS
-  @drawAxes()
+  # @drawAxes()
   @animate()

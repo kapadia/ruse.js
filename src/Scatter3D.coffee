@@ -114,8 +114,8 @@ Ruse::animate3d = ->
   i = 0
   intervalId = setInterval( =>
     i += 1
-    @gl.uniform1f(@uTime3d, i / 250)
+    @gl.uniform1f(@uTime3d, i / 150)
     @draw3d()
-    if i is 250
+    if i is 150
       clearInterval(intervalId)
   , 1000 / 60)
