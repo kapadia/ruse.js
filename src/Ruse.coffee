@@ -219,10 +219,10 @@ class Ruse
     @uMaximum2 = @gl.getUniformLocation(@programs.ruse, "uMaximum2")
     
     # NOTE: Looks like we can request uniforms despite not being on the same program
-    @uMinimum = @gl.getUniformLocation(@programs.three, "uMinimum")
-    @uMaximum = @gl.getUniformLocation(@programs.three, "uMaximum")
+    @uMinimum3d1 = @gl.getUniformLocation(@programs.three, "uMinimum1")
+    @uMaximum3d1 = @gl.getUniformLocation(@programs.three, "uMaximum1")
     @uTime3d = @gl.getUniformLocation(@programs.three, "uTime")
-    @uSwitch3d = @gl.getUniformLocation(@programs.three, "uSwitch")
+    @switch3d = 0
     
     # Set initial values for uniforms
     @switch = 0

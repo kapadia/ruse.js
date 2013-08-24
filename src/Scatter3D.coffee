@@ -69,8 +69,8 @@ Ruse::scatter3D = (data) ->
     zmin: min3
     zmax: max3
   
-  @gl.uniform3f(@uMinimum, min1, min2, min3)
-  @gl.uniform3f(@uMaximum, max1, max2, max3)
+  @gl.uniform3f(@uMinimum3d1, min1, min2, min3)
+  @gl.uniform3f(@uMaximum3d1, max1, max2, max3)
   
   range1 = max1 - min1
   range2 = max2 - min2
@@ -82,22 +82,46 @@ Ruse::scatter3D = (data) ->
     vertices[i] = initialVertices[i] = datum[@key1]
     vertices[i + 1] = initialVertices[i + 1] = datum[@key2]
     vertices[i + 2] = datum[@key3]
+    
+    # NOTE: Another solution for the initial vertices is to create a GL program that is 
+    #       run only once to run on the initial upload of data.  Subsequent plots will use
+    #       another shader program that is created for transitions between buffers.  This is possible
+    #       because programs can share buffers (i think ...).  This would provide a more memory efficient
+    #       solution, as only one typed array needs to be initialized on the client.
     initialVertices[i + 2] = 0
   
-  @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer1)
-  @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
   @threeBuffer1.itemSize = vertexSize
   @threeBuffer1.numItems = nVertices
-  @gl.vertexAttribPointer(@programs.three.vertexPosition1Attribute, @threeBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
   
-  @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer2)
-  @gl.bufferData(@gl.ARRAY_BUFFER, initialVertices, @gl.STATIC_DRAW)
   @threeBuffer2.itemSize = vertexSize
   @threeBuffer2.numItems = nVertices
-  @gl.vertexAttribPointer(@programs.three.vertexPosition2Attribute, @threeBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
+  
+  # Upload buffer arrays to GPU
+  @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer1)
+  @gl.bufferData(@gl.ARRAY_BUFFER, initialVertices, @gl.STATIC_DRAW)
+  
+  @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer2)
+  @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
+  
+  # Delegate the attribute pointers based on the switch
+  if @switch3d is 0
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer1)
+    @gl.vertexAttribPointer(@programs.three.vertexPosition2Attribute, @threeBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
+    
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer2)
+    @gl.vertexAttribPointer(@programs.three.vertexPosition1Attribute, @threeBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
+    
+    @switch3d = 1
+  else
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer1)
+    @gl.vertexAttribPointer(@programs.three.vertexPosition1Attribute, @threeBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
+    
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer2)
+    @gl.vertexAttribPointer(@programs.three.vertexPosition2Attribute, @threeBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
+    
+    @switch3d = 0
   
   @_setupMouseControls()
-  
   @animate3d()
 
 Ruse::draw3d = ->

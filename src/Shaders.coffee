@@ -47,11 +47,10 @@ Shaders =
     "uniform mat4 uMVMatrix;"
     "uniform mat4 uPMatrix;"
     
-    "uniform vec3 uMinimum;"
-    "uniform vec3 uMaximum;"
+    "uniform vec3 uMinimum1;"
+    "uniform vec3 uMaximum1;"
     
     "uniform float uTime;"
-    "uniform float uSwitch;"
     
     "void main(void) {"
       "gl_PointSize = 1.25;"
@@ -61,10 +60,10 @@ Shaders =
       "vec3 scale = vec3(2.0, 2.0, 2.0);"
       "vec3 offset = vec3(-1.0, -1.0, -1.0);"
       
-      "vec3 range = uMaximum - uMinimum;"
+      "vec3 range = uMaximum1 - uMinimum1;"
       
-      "vec3 vertexPosition1 = scale / range * (aVertexPosition1 - uMinimum) + offset;"
-      "vec3 vertexPosition2 = scale / range * (aVertexPosition2 - uMinimum) + offset;"
+      "vec3 vertexPosition1 = scale / range * (aVertexPosition1 - uMinimum1) + offset;"
+      "vec3 vertexPosition2 = scale / range * (aVertexPosition2 - uMinimum1) + offset;"
       
       "vec3 vertexPosition = (1.0 - uTime) * vertexPosition2 + uTime * vertexPosition1;"
       
