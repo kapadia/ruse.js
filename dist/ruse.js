@@ -672,7 +672,7 @@
   };
 
   Ruse.prototype.scatter3D = function(data) {
-    var datum, i, index, initialVertices, margin, max1, max2, max3, min1, min2, min3, nVertices, range1, range2, range3, val1, val2, val3, vertexSize, vertices, _i, _len, _ref;
+    var datum, i, index, initialVertices, margin, max1, max2, max3, min1, min2, min3, nVertices, range1, range2, range3, val1, val2, val3, vertexSize, vertices, _i, _j, _len, _len1, _ref;
     mat4.perspective(this.pMatrix, 45.0, 1.0, 0.1, 100.0);
     this.gl.useProgram(this.programs.three);
     this.spoofAttributes();
@@ -728,24 +728,31 @@
       vertices[i] = initialVertices[i] = datum[this.key1];
       vertices[i + 1] = initialVertices[i + 1] = datum[this.key2];
       vertices[i + 2] = datum[this.key3];
-      initialVertices[i + 2] = 0;
+    }
+    if (!this.hasData3d) {
+      for (index = _j = 0, _len1 = data.length; _j < _len1; index = ++_j) {
+        datum = data[index];
+        i = vertexSize * index;
+        initialVertices[i + 2] = 0;
+      }
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.threeBuffer1);
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, initialVertices, this.gl.STATIC_DRAW);
+      this.hasData3d = true;
     }
     this.threeBuffer1.itemSize = vertexSize;
     this.threeBuffer1.numItems = nVertices;
     this.threeBuffer2.itemSize = vertexSize;
     this.threeBuffer2.numItems = nVertices;
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.threeBuffer1);
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, initialVertices, this.gl.STATIC_DRAW);
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.threeBuffer2);
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
     if (this.switch3d === 0) {
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.threeBuffer1);
       this.gl.vertexAttribPointer(this.programs.three.vertexPosition2Attribute, this.threeBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.threeBuffer2);
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
       this.gl.vertexAttribPointer(this.programs.three.vertexPosition1Attribute, this.threeBuffer2.itemSize, this.gl.FLOAT, false, 0, 0);
       this.switch3d = 1;
     } else {
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.threeBuffer1);
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
       this.gl.vertexAttribPointer(this.programs.three.vertexPosition1Attribute, this.threeBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.threeBuffer2);
       this.gl.vertexAttribPointer(this.programs.three.vertexPosition2Attribute, this.threeBuffer2.itemSize, this.gl.FLOAT, false, 0, 0);

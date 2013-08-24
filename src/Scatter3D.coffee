@@ -82,13 +82,22 @@ Ruse::scatter3D = (data) ->
     vertices[i] = initialVertices[i] = datum[@key1]
     vertices[i + 1] = initialVertices[i + 1] = datum[@key2]
     vertices[i + 2] = datum[@key3]
-    
+  
+  unless @hasData3d
     # NOTE: Another solution for the initial vertices is to create a GL program that is 
     #       run only once to run on the initial upload of data.  Subsequent plots will use
     #       another shader program that is created for transitions between buffers.  This is possible
     #       because programs can share buffers (i think ...).  This would provide a more memory efficient
     #       solution, as only one typed array needs to be initialized on the client.
-    initialVertices[i + 2] = 0
+    for datum, index in data
+      i = vertexSize * index
+      initialVertices[i + 2] = 0
+    
+    # Upload initial buffer array to GPU
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer1)
+    @gl.bufferData(@gl.ARRAY_BUFFER, initialVertices, @gl.STATIC_DRAW)
+    
+    @hasData3d = true
   
   @threeBuffer1.itemSize = vertexSize
   @threeBuffer1.numItems = nVertices
@@ -96,24 +105,19 @@ Ruse::scatter3D = (data) ->
   @threeBuffer2.itemSize = vertexSize
   @threeBuffer2.numItems = nVertices
   
-  # Upload buffer arrays to GPU
-  @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer1)
-  @gl.bufferData(@gl.ARRAY_BUFFER, initialVertices, @gl.STATIC_DRAW)
-  
-  @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer2)
-  @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
-  
-  # Delegate the attribute pointers based on the switch
+  # Upload new data to appropriate buffer and delegate attribute pointers based according to switch
   if @switch3d is 0
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer1)
     @gl.vertexAttribPointer(@programs.three.vertexPosition2Attribute, @threeBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
     
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer2)
+    @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
     @gl.vertexAttribPointer(@programs.three.vertexPosition1Attribute, @threeBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
     
     @switch3d = 1
   else
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer1)
+    @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
     @gl.vertexAttribPointer(@programs.three.vertexPosition1Attribute, @threeBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
     
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer2)
