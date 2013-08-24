@@ -743,7 +743,6 @@
     this.threeBuffer1.numItems = nVertices;
     this.threeBuffer2.itemSize = vertexSize;
     this.threeBuffer2.numItems = nVertices;
-    console.log("@switch3d", this.switch3d);
     if (this.switch3d === 0) {
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.threeBuffer1);
       this.gl.vertexAttribPointer(this.programs.three.vertexPosition1Attribute, this.threeBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
@@ -794,8 +793,10 @@
     this.gl.useProgram(this.programs.three);
     i = 0;
     return intervalId = setInterval(function() {
+      var uTime;
       i += 1;
-      _this.gl.uniform1f(_this.uTime3d, i / 150);
+      uTime = _this.switch3d === 1 ? i / 150 : 1 - i / 150;
+      _this.gl.uniform1f(_this.uTime3d, uTime);
       _this.draw3d();
       if (i === 150) {
         return clearInterval(intervalId);

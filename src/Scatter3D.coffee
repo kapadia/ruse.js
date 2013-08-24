@@ -104,7 +104,6 @@ Ruse::scatter3D = (data) ->
   @threeBuffer2.numItems = nVertices
   
   # Upload new data to appropriate buffer and delegate attribute pointers based according to switch
-  console.log "@switch3d", @switch3d
   if @switch3d is 0
     
     #
@@ -175,7 +174,8 @@ Ruse::animate3d = ->
   i = 0
   intervalId = setInterval( =>
     i += 1
-    @gl.uniform1f(@uTime3d, i / 150)
+    uTime = if @switch3d is 1 then i / 150 else 1 - i / 150
+    @gl.uniform1f(@uTime3d, uTime)
     @draw3d()
     if i is 150
       clearInterval(intervalId)
