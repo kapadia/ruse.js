@@ -60,18 +60,6 @@ Ruse::scatter3D = (data) ->
     min3 = val3 if val3 < min3
     max3 = val3 if val3 > max3
   
-  # Store computed extents for use when creating axes
-  @extents =
-    xmin: min1
-    xmax: max1
-    ymin: min2
-    ymax: max2
-    zmin: min3
-    zmax: max3
-  
-  @gl.uniform3f(@uMinimum3d1, min1, min2, min3)
-  @gl.uniform3f(@uMaximum3d1, max1, max2, max3)
-  
   range1 = max1 - min1
   range2 = max2 - min2
   range3 = max3 - min3
@@ -97,6 +85,16 @@ Ruse::scatter3D = (data) ->
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer1)
     @gl.bufferData(@gl.ARRAY_BUFFER, initialVertices, @gl.STATIC_DRAW)
     
+    # Store computed extents for use when creating axes
+    # This is stored here so that code below perceives it as previous values
+    @extents =
+      xmin: min1
+      xmax: max1
+      ymin: min2
+      ymax: max2
+      zmin: min3
+      zmax: max3
+    
     @hasData3d = true
   
   @threeBuffer1.itemSize = vertexSize
@@ -106,24 +104,57 @@ Ruse::scatter3D = (data) ->
   @threeBuffer2.numItems = nVertices
   
   # Upload new data to appropriate buffer and delegate attribute pointers based according to switch
+  console.log "@switch3d", @switch3d
   if @switch3d is 0
+    
+    #
+    # Data transitions from aVertexPosition1 to aVertexPosition2
+    #
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer1)
-    @gl.vertexAttribPointer(@programs.three.vertexPosition2Attribute, @threeBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.vertexAttribPointer(@programs.three.vertexPosition1Attribute, @threeBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
+    
+    # Bind previous extents to uMinimum1 and uMaximum2
+    @gl.uniform3f(@uMinimum3d1, @extents.xmin, @extents.ymin, @extents.zmin)
+    @gl.uniform3f(@uMaximum3d1, @extents.xmax, @extents.ymax, @extents.zmax)
+    
+    # Bind current extents to uMinimum2 and uMaximum2
+    @gl.uniform3f(@uMinimum3d2, min1, min2, min3)
+    @gl.uniform3f(@uMaximum3d2, max1, max2, max3)
     
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer2)
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
-    @gl.vertexAttribPointer(@programs.three.vertexPosition1Attribute, @threeBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.vertexAttribPointer(@programs.three.vertexPosition2Attribute, @threeBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
     
     @switch3d = 1
   else
+    #
+    # Data transitions from aVertexPosition2 to aVertexPosition1
+    #
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer1)
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
     @gl.vertexAttribPointer(@programs.three.vertexPosition1Attribute, @threeBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
+    
+    # Bind current extents to uMinimum1 and uMaximum2
+    @gl.uniform3f(@uMinimum3d1, min1, min2, min3)
+    @gl.uniform3f(@uMaximum3d1, max1, max2, max3)
+    
+    # Bind previous extents to uMinimum2 and uMaximum2
+    @gl.uniform3f(@uMinimum3d2, @extents.xmin, @extents.ymin, @extents.zmin)
+    @gl.uniform3f(@uMaximum3d2, @extents.xmax, @extents.ymax, @extents.zmax)
     
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer2)
     @gl.vertexAttribPointer(@programs.three.vertexPosition2Attribute, @threeBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
     
     @switch3d = 0
+  
+  # Update computed extents for current data
+  @extents =
+    xmin: min1
+    xmax: max1
+    ymin: min2
+    ymax: max2
+    zmin: min3
+    zmax: max3
   
   @_setupMouseControls()
   @animate3d()

@@ -207,25 +207,25 @@ class Ruse
     @programs["three"] = @_createProgram3D(@gl, shaders.vertex3D, shaders.fragment)
     
     # Get uniforms
-    @gl.useProgram(@programs.ruse)
-    @uTime = @gl.getUniformLocation(@programs.ruse, "uTime")
-    @uSwitch = @gl.getUniformLocation(@programs.ruse, "uSwitch")
-    
     @uMargin = @gl.getUniformLocation(@programs.ruse, "uMargin")
     
     @uMinimum1 = @gl.getUniformLocation(@programs.ruse, "uMinimum1")
     @uMaximum1 = @gl.getUniformLocation(@programs.ruse, "uMaximum1")
     @uMinimum2 = @gl.getUniformLocation(@programs.ruse, "uMinimum2")
     @uMaximum2 = @gl.getUniformLocation(@programs.ruse, "uMaximum2")
+    @uTime = @gl.getUniformLocation(@programs.ruse, "uTime")
+    @uSwitch = @gl.getUniformLocation(@programs.ruse, "uSwitch")
     
-    # NOTE: Looks like we can request uniforms despite not being on the same program
     @uMinimum3d1 = @gl.getUniformLocation(@programs.three, "uMinimum1")
     @uMaximum3d1 = @gl.getUniformLocation(@programs.three, "uMaximum1")
+    @uMinimum3d2 = @gl.getUniformLocation(@programs.three, "uMinimum2")
+    @uMaximum3d2 = @gl.getUniformLocation(@programs.three, "uMaximum2")
     @uTime3d = @gl.getUniformLocation(@programs.three, "uTime")
     @switch3d = 0
     
     # Set initial values for uniforms
     @switch = 0
+    @gl.useProgram(@programs.ruse)
     @gl.uniform1f(@uTime, 0)
     @gl.uniform1f(@uSwitch, @switch)
     @gl.uniform1f( @uMargin, @getMargin() )
