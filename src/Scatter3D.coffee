@@ -11,7 +11,8 @@ Ruse::scatter3D = (data) ->
   # Add perspective when working in three dimensions
   mat4.perspective(@pMatrix, 45.0, 1.0, 0.1, 100.0)
   
-  @gl.useProgram(@programs.three)
+  @gl.useProgram(@programs.ruse)
+  @gl.uniform1f(@uZComponent, 1.0)
   
   # Proceed to handling the real data
   
@@ -75,19 +76,19 @@ Ruse::scatter3D = (data) ->
     # Data transitions from aVertexPosition1 to aVertexPosition2
     #
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer1)
-    @gl.vertexAttribPointer(@programs.three.aVertexPosition1, @dataBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.vertexAttribPointer(@programs.ruse.aVertexPosition1, @dataBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
     
     # Bind previous extents to uMinimum1 and uMaximum2
-    @gl.uniform3f(@uMinimum3d1, @extents.xmin, @extents.ymin, @extents.zmin)
-    @gl.uniform3f(@uMaximum3d1, @extents.xmax, @extents.ymax, @extents.zmax)
+    @gl.uniform3f(@uMinimum1, @extents.xmin, @extents.ymin, @extents.zmin)
+    @gl.uniform3f(@uMaximum1, @extents.xmax, @extents.ymax, @extents.zmax)
     
     # Bind current extents to uMinimum2 and uMaximum2
-    @gl.uniform3f(@uMinimum3d2, min1, min2, min3)
-    @gl.uniform3f(@uMaximum3d2, max1, max2, max3)
+    @gl.uniform3f(@uMinimum2, min1, min2, min3)
+    @gl.uniform3f(@uMaximum2, max1, max2, max3)
     
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer2)
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
-    @gl.vertexAttribPointer(@programs.three.aVertexPosition2, @dataBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.vertexAttribPointer(@programs.ruse.aVertexPosition2, @dataBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
     
     @switch = 1
   else
@@ -96,18 +97,18 @@ Ruse::scatter3D = (data) ->
     #
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer1)
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
-    @gl.vertexAttribPointer(@programs.three.aVertexPosition1, @dataBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.vertexAttribPointer(@programs.ruse.aVertexPosition1, @dataBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
     
     # Bind current extents to uMinimum1 and uMaximum2
-    @gl.uniform3f(@uMinimum3d1, min1, min2, min3)
-    @gl.uniform3f(@uMaximum3d1, max1, max2, max3)
+    @gl.uniform3f(@uMinimum1, min1, min2, min3)
+    @gl.uniform3f(@uMaximum1, max1, max2, max3)
     
     # Bind previous extents to uMinimum2 and uMaximum2
-    @gl.uniform3f(@uMinimum3d2, @extents.xmin, @extents.ymin, @extents.zmin)
-    @gl.uniform3f(@uMaximum3d2, @extents.xmax, @extents.ymax, @extents.zmax)
+    @gl.uniform3f(@uMinimum2, @extents.xmin, @extents.ymin, @extents.zmin)
+    @gl.uniform3f(@uMaximum2, @extents.xmax, @extents.ymax, @extents.zmax)
     
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer2)
-    @gl.vertexAttribPointer(@programs.three.aVertexPosition2, @dataBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.vertexAttribPointer(@programs.ruse.aVertexPosition2, @dataBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
     
     @switch = 0
   
@@ -129,19 +130,19 @@ Ruse::draw3d = ->
   mat4.identity(@mvMatrix)
   mat4.translate(@mvMatrix, @mvMatrix, [0.0, 0.0, -4.0])
   mat4.multiply(@mvMatrix, @mvMatrix, @rotationMatrix)
-  @_setMatrices(@programs.three)
+  @_setMatrices(@programs.ruse)
   
   @gl.clear(@gl.COLOR_BUFFER_BIT | @gl.DEPTH_BUFFER_BIT)
   @gl.drawArrays(@gl.POINTS, 0, @dataBuffer1.numItems)
   
 Ruse::animate3d = ->
-  @gl.useProgram(@programs.three)
+  @gl.useProgram(@programs.ruse)
   
   i = 0
   intervalId = setInterval( =>
     i += 1
     uTime = if @switch is 1 then i / 150 else 1 - i / 150
-    @gl.uniform1f(@uTime3d, uTime)
+    @gl.uniform1f(@uTime, uTime)
     @draw3d()
     if i is 150
       clearInterval(intervalId)
