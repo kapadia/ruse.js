@@ -81,7 +81,7 @@
         mat4.multiply(_this.rotationMatrix, rotationMatrix, _this.rotationMatrix);
         _this.xOldOffset = x;
         _this.yOldOffset = y;
-        return _this.draw3d();
+        return _this.draw();
       };
       this.axesCanvas.onmouseout = function(e) {
         return _this.drag = false;
@@ -164,9 +164,16 @@
     }
 
     Ruse.prototype.draw = function() {
-      this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+      mat4.identity(this.mvMatrix);
+      mat4.translate(this.mvMatrix, this.mvMatrix, this.translateBy);
+      mat4.multiply(this.mvMatrix, this.mvMatrix, this.rotationMatrix);
       this._setMatrices(this.programs.ruse);
+      this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
       return this.gl.drawArrays(this.drawMode, 0, this.dataBuffer1.numItems);
+    };
+
+    Ruse.prototype.removeAxes = function() {
+      return this.axesCanvas.width = this.axesCanvas.width;
     };
 
     Ruse.prototype.drawAxes = function() {
@@ -546,6 +553,8 @@
     this.gl.uniform1f(this.uZComponent, 0.0);
     mat4.identity(this.pMatrix);
     mat4.identity(this.mvMatrix);
+    mat4.identity(this.rotationMatrix);
+    this.translateBy = [0.0, 0.0, 0.0];
     margin = this.getMargin();
     vertexSize = 2;
     nVertices = data.length;
@@ -611,8 +620,9 @@
       ymin: min2,
       ymax: max2
     };
-    this.drawMode = this.gl.POINTS;
     this.drawAxes();
+    this.drawMode = this.gl.POINTS;
+    this.axesCanvas.onmousemove = null;
     return this.animate();
   };
 
@@ -626,6 +636,7 @@
     }
     this.state = "scatter3D";
     mat4.perspective(this.pMatrix, 45.0, 1.0, 0.1, 100.0);
+    this.translateBy = [0.0, 0.0, -4.0];
     this.gl.useProgram(this.programs.ruse);
     this.gl.uniform1f(this.uZComponent, 1.0);
     vertexSize = 3;
@@ -700,33 +711,9 @@
       zmax: max3
     };
     this._setupMouseControls();
-    return this.animate3d();
-  };
-
-  Ruse.prototype.draw3d = function() {
-    mat4.identity(this.mvMatrix);
-    mat4.translate(this.mvMatrix, this.mvMatrix, [0.0, 0.0, -4.0]);
-    mat4.multiply(this.mvMatrix, this.mvMatrix, this.rotationMatrix);
-    this._setMatrices(this.programs.ruse);
-    this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-    return this.gl.drawArrays(this.gl.POINTS, 0, this.dataBuffer1.numItems);
-  };
-
-  Ruse.prototype.animate3d = function() {
-    var i, intervalId,
-      _this = this;
-    this.gl.useProgram(this.programs.ruse);
-    i = 0;
-    return intervalId = setInterval(function() {
-      var uTime;
-      i += 1;
-      uTime = _this["switch"] === 1 ? i / 150 : 1 - i / 150;
-      _this.gl.uniform1f(_this.uTime, uTime);
-      _this.draw3d();
-      if (i === 150) {
-        return clearInterval(intervalId);
-      }
-    }, 1000 / 60);
+    this.removeAxes();
+    this.drawMode = this.gl.POINTS;
+    return this.animate();
   };
 
   Shaders = {

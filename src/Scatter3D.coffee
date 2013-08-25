@@ -10,6 +10,7 @@ Ruse::scatter3D = (data) ->
   
   # Add perspective when working in three dimensions
   mat4.perspective(@pMatrix, 45.0, 1.0, 0.1, 100.0)
+  @translateBy = [0.0, 0.0, -4.0]
   
   @gl.useProgram(@programs.ruse)
   @gl.uniform1f(@uZComponent, 1.0)
@@ -120,30 +121,8 @@ Ruse::scatter3D = (data) ->
     ymax: max2
     zmin: min3
     zmax: max3
-  
+    
   @_setupMouseControls()
-  
-  @animate3d()
-
-Ruse::draw3d = ->
-  
-  mat4.identity(@mvMatrix)
-  mat4.translate(@mvMatrix, @mvMatrix, [0.0, 0.0, -4.0])
-  mat4.multiply(@mvMatrix, @mvMatrix, @rotationMatrix)
-  @_setMatrices(@programs.ruse)
-  
-  @gl.clear(@gl.COLOR_BUFFER_BIT | @gl.DEPTH_BUFFER_BIT)
-  @gl.drawArrays(@gl.POINTS, 0, @dataBuffer1.numItems)
-  
-Ruse::animate3d = ->
-  @gl.useProgram(@programs.ruse)
-  
-  i = 0
-  intervalId = setInterval( =>
-    i += 1
-    uTime = if @switch is 1 then i / 150 else 1 - i / 150
-    @gl.uniform1f(@uTime, uTime)
-    @draw3d()
-    if i is 150
-      clearInterval(intervalId)
-  , 1000 / 60)
+  @removeAxes()
+  @drawMode = @gl.POINTS
+  @animate()

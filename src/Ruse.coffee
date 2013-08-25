@@ -85,7 +85,7 @@ class Ruse
       @xOldOffset = x
       @yOldOffset = y
       
-      @draw3d()
+      @draw()
       
       # deltaX = x - @xOldOffset
       # deltaY = y - @yOldOffset
@@ -213,9 +213,16 @@ class Ruse
   #
   
   draw: ->
-    @gl.clear(@gl.COLOR_BUFFER_BIT | @gl.DEPTH_BUFFER_BIT)
+    mat4.identity(@mvMatrix)
+    mat4.translate(@mvMatrix, @mvMatrix, @translateBy)
+    mat4.multiply(@mvMatrix, @mvMatrix, @rotationMatrix)
+    
     @_setMatrices(@programs.ruse)
+    @gl.clear(@gl.COLOR_BUFFER_BIT | @gl.DEPTH_BUFFER_BIT)
     @gl.drawArrays(@drawMode, 0, @dataBuffer1.numItems)
+  
+  removeAxes: ->
+    @axesCanvas.width = @axesCanvas.width
   
   drawAxes: ->
     # Clear the axes canvas

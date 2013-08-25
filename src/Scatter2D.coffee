@@ -13,6 +13,8 @@ Ruse::scatter2D = (data) ->
   # Remove perspective if working in two dimensions
   mat4.identity(@pMatrix)
   mat4.identity(@mvMatrix)
+  mat4.identity(@rotationMatrix)
+  @translateBy = [0.0, 0.0, 0.0]
   
   # Compute margin that incorporates spaces needed for axes labels
   margin = @getMargin()
@@ -116,6 +118,7 @@ Ruse::scatter2D = (data) ->
     ymin: min2
     ymax: max2
   
-  @drawMode = @gl.POINTS
   @drawAxes()
+  @drawMode = @gl.POINTS
+  @axesCanvas.onmousemove = null
   @animate()
