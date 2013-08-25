@@ -25,6 +25,10 @@ Ruse::getHistogram = (arr, min, max, bins) ->
 
 # Draw a histogram.
 Ruse::histogram = (data) ->
+  unless @state is "histogram"
+    @switch = 0
+    @hasData = false
+  @state = "histogram"
   
   # Data may be formated as an array of one dimensional objects
   # or an array of values

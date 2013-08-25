@@ -2,6 +2,11 @@
 Ruse = @astro.Ruse
 
 Ruse::scatter2D = (data) ->
+  unless @state is "scatter2D"
+    @switch = 0
+    @hasData = false
+  @state = "scatter2D"
+  
   @gl.useProgram(@programs.ruse)
   
   # Remove perspective if working in two dimensions
@@ -40,7 +45,7 @@ Ruse::scatter2D = (data) ->
       initialVertices[i + 1] = min2
     
     # Upload initial buffer array to GPU
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @state1Buffer)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer1)
     @gl.bufferData(@gl.ARRAY_BUFFER, initialVertices, @gl.STATIC_DRAW)
     
     # Store computed extents for use when creating axes
@@ -53,11 +58,11 @@ Ruse::scatter2D = (data) ->
     
     @hasData = true
   
-  @state1Buffer.itemSize = vertexSize
-  @state1Buffer.numItems = nVertices
+  @dataBuffer1.itemSize = vertexSize
+  @dataBuffer1.numItems = nVertices
   
-  @state2Buffer.itemSize = vertexSize
-  @state2Buffer.numItems = nVertices
+  @dataBuffer2.itemSize = vertexSize
+  @dataBuffer2.numItems = nVertices
   
   # Upload new data to appropriate buffer and delegate attribute pointers based according to switch
   if @switch is 0
@@ -65,8 +70,8 @@ Ruse::scatter2D = (data) ->
     #
     # Data transitions from aVertexPosition1 to aVertexPosition2
     #
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @state1Buffer)
-    @gl.vertexAttribPointer(@programs.ruse.aVertexPosition1, @state1Buffer.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer1)
+    @gl.vertexAttribPointer(@programs.ruse.aVertexPosition1, @dataBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
     
     # Bind previous extents to uMinimum1 and uMaximum2
     @gl.uniform3f(@uMinimum1, @extents.xmin, @extents.ymin, 0)
@@ -76,9 +81,9 @@ Ruse::scatter2D = (data) ->
     @gl.uniform3f(@uMinimum2, min1, min2, 0)
     @gl.uniform3f(@uMaximum2, max1, max2, 1)
     
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @state2Buffer)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer2)
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
-    @gl.vertexAttribPointer(@programs.ruse.aVertexPosition2, @state2Buffer.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.vertexAttribPointer(@programs.ruse.aVertexPosition2, @dataBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
     
     @switch = 1
   else
@@ -86,9 +91,9 @@ Ruse::scatter2D = (data) ->
     #
     # Data transitions from aVertexPosition2 to aVertexPosition1
     #
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @state1Buffer)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer1)
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
-    @gl.vertexAttribPointer(@programs.ruse.aVertexPosition1, @state1Buffer.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.vertexAttribPointer(@programs.ruse.aVertexPosition1, @dataBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
     
     # Bind current extents to uMinimum1 and uMaximum2
     @gl.uniform3f(@uMinimum1, min1, min2, 0)
@@ -98,8 +103,8 @@ Ruse::scatter2D = (data) ->
     @gl.uniform3f(@uMinimum2, @extents.xmin, @extents.ymin, 0)
     @gl.uniform3f(@uMaximum2, @extents.xmax, @extents.ymax, 1)
     
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @state2Buffer)
-    @gl.vertexAttribPointer(@programs.ruse.aVertexPosition2, @state2Buffer.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer2)
+    @gl.vertexAttribPointer(@programs.ruse.aVertexPosition2, @dataBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
     
     @switch = 0
   

@@ -5,14 +5,12 @@
 
   Ruse = (function() {
     Ruse.prototype._loadShader = function(gl, source, type) {
-      var compiled, lastError, shader;
+      var compiled, shader;
       shader = gl.createShader(type);
       gl.shaderSource(shader, source);
       gl.compileShader(shader);
       compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
       if (!compiled) {
-        lastError = gl.getShaderInfoLog(shader);
-        throw "Error compiling shader " + shader + ": " + lastError;
         gl.deleteShader(shader);
         return null;
       }
@@ -29,7 +27,6 @@
       gl.linkProgram(program);
       linked = gl.getProgramParameter(program, gl.LINK_STATUS);
       if (!linked) {
-        throw "Error in program linking: " + (gl.getProgramInfoLog(program));
         gl.deleteProgram(program);
         return null;
       }
@@ -154,8 +151,6 @@
       this.uMinimum3d2 = this.gl.getUniformLocation(this.programs.three, "uMinimum2");
       this.uMaximum3d2 = this.gl.getUniformLocation(this.programs.three, "uMaximum2");
       this.uTime3d = this.gl.getUniformLocation(this.programs.three, "uTime");
-      this.switch3d = 0;
-      this["switch"] = 0;
       this.gl.useProgram(this.programs.ruse);
       this.gl.uniform1f(this.uTime, 0);
       this.gl.uniform1f(this.uMargin, this.getMargin());
@@ -169,17 +164,16 @@
       this.gl.viewport(0, 0, this.width, this.height);
       this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
       this.gl.enable(this.gl.DEPTH_TEST);
-      this.state1Buffer = this.gl.createBuffer();
-      this.state2Buffer = this.gl.createBuffer();
-      this.finalBuffer = this.state2Buffer;
-      this.threeBuffer1 = this.gl.createBuffer();
-      this.threeBuffer2 = this.gl.createBuffer();
+      this.dataBuffer1 = this.gl.createBuffer();
+      this.dataBuffer2 = this.gl.createBuffer();
+      this["switch"] = 0;
+      this.state = null;
     }
 
     Ruse.prototype.draw = function() {
       this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
       this._setMatrices(this.programs.ruse);
-      return this.gl.drawArrays(this.drawMode, 0, this.finalBuffer.numItems);
+      return this.gl.drawArrays(this.drawMode, 0, this.dataBuffer1.numItems);
     };
 
     Ruse.prototype.drawAxes = function() {
@@ -475,6 +469,11 @@
 
   Ruse.prototype.histogram = function(data) {
     var clipspaceBinWidth, clipspaceLower, clipspaceSize, clipspaceUpper, countMax, countMin, datum, finalAttribute, finalBuffer, h, histMax, histMin, i, index, initialAttribute, initialBuffer, key, margin, max, min, nVertices, value, vertexSize, vertices, width, x, y, y0, _i, _len, _ref, _ref1, _ref2, _ref3;
+    if (this.state !== "histogram") {
+      this["switch"] = 0;
+      this.hasData = false;
+    }
+    this.state = "histogram";
     datum = data[0];
     if (this.isObject(datum)) {
       key = Object.keys(datum)[0];
@@ -545,6 +544,11 @@
 
   Ruse.prototype.scatter2D = function(data) {
     var datum, i, index, initialVertices, margin, max1, max2, min1, min2, nVertices, range1, range2, vertexSize, vertices, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3;
+    if (this.state !== "scatter2D") {
+      this["switch"] = 0;
+      this.hasData = false;
+    }
+    this.state = "scatter2D";
     this.gl.useProgram(this.programs.ruse);
     mat4.identity(this.pMatrix);
     mat4.identity(this.mvMatrix);
@@ -570,7 +574,7 @@
         initialVertices[i] = datum[this.key1];
         initialVertices[i + 1] = min2;
       }
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.state1Buffer);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
       this.gl.bufferData(this.gl.ARRAY_BUFFER, initialVertices, this.gl.STATIC_DRAW);
       this.extents = {
         xmin: min1,
@@ -580,31 +584,31 @@
       };
       this.hasData = true;
     }
-    this.state1Buffer.itemSize = vertexSize;
-    this.state1Buffer.numItems = nVertices;
-    this.state2Buffer.itemSize = vertexSize;
-    this.state2Buffer.numItems = nVertices;
+    this.dataBuffer1.itemSize = vertexSize;
+    this.dataBuffer1.numItems = nVertices;
+    this.dataBuffer2.itemSize = vertexSize;
+    this.dataBuffer2.numItems = nVertices;
     if (this["switch"] === 0) {
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.state1Buffer);
-      this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition1, this.state1Buffer.itemSize, this.gl.FLOAT, false, 0, 0);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
+      this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition1, this.dataBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
       this.gl.uniform3f(this.uMinimum1, this.extents.xmin, this.extents.ymin, 0);
       this.gl.uniform3f(this.uMaximum1, this.extents.xmax, this.extents.ymax, 1);
       this.gl.uniform3f(this.uMinimum2, min1, min2, 0);
       this.gl.uniform3f(this.uMaximum2, max1, max2, 1);
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.state2Buffer);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer2);
       this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
-      this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition2, this.state2Buffer.itemSize, this.gl.FLOAT, false, 0, 0);
+      this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition2, this.dataBuffer2.itemSize, this.gl.FLOAT, false, 0, 0);
       this["switch"] = 1;
     } else {
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.state1Buffer);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
       this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
-      this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition1, this.state1Buffer.itemSize, this.gl.FLOAT, false, 0, 0);
+      this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition1, this.dataBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
       this.gl.uniform3f(this.uMinimum1, min1, min2, 0);
       this.gl.uniform3f(this.uMaximum1, max1, max2, 1);
       this.gl.uniform3f(this.uMinimum2, this.extents.xmin, this.extents.ymin, 0);
       this.gl.uniform3f(this.uMaximum2, this.extents.xmax, this.extents.ymax, 1);
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.state2Buffer);
-      this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition2, this.state2Buffer.itemSize, this.gl.FLOAT, false, 0, 0);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer2);
+      this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition2, this.dataBuffer2.itemSize, this.gl.FLOAT, false, 0, 0);
       this["switch"] = 0;
     }
     this.extents = {
@@ -622,6 +626,11 @@
 
   Ruse.prototype.scatter3D = function(data) {
     var datum, i, index, initialVertices, max1, max2, max3, min1, min2, min3, nVertices, range1, range2, range3, vertexSize, vertices, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3;
+    if (this.state !== "scatter3D") {
+      this["switch"] = 0;
+      this.hasData = false;
+    }
+    this.state = "scatter3D";
     mat4.perspective(this.pMatrix, 45.0, 1.0, 0.1, 100.0);
     this.gl.useProgram(this.programs.three);
     vertexSize = 3;
@@ -639,7 +648,7 @@
       vertices[i + 1] = datum[this.key2];
       vertices[i + 2] = datum[this.key3];
     }
-    if (!this.hasData3d) {
+    if (!this.hasData) {
       initialVertices = new Float32Array(vertexSize * nVertices);
       for (index = _j = 0, _len1 = data.length; _j < _len1; index = ++_j) {
         datum = data[index];
@@ -648,7 +657,7 @@
         initialVertices[i + 1] = datum[this.key2];
         initialVertices[i + 2] = 0;
       }
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.threeBuffer1);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
       this.gl.bufferData(this.gl.ARRAY_BUFFER, initialVertices, this.gl.STATIC_DRAW);
       this.extents = {
         xmin: min1,
@@ -658,34 +667,34 @@
         zmin: min3,
         zmax: max3
       };
-      this.hasData3d = true;
+      this.hasData = true;
     }
-    this.threeBuffer1.itemSize = vertexSize;
-    this.threeBuffer1.numItems = nVertices;
-    this.threeBuffer2.itemSize = vertexSize;
-    this.threeBuffer2.numItems = nVertices;
-    if (this.switch3d === 0) {
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.threeBuffer1);
-      this.gl.vertexAttribPointer(this.programs.three.aVertexPosition1, this.threeBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
+    this.dataBuffer1.itemSize = vertexSize;
+    this.dataBuffer1.numItems = nVertices;
+    this.dataBuffer2.itemSize = vertexSize;
+    this.dataBuffer2.numItems = nVertices;
+    if (this["switch"] === 0) {
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
+      this.gl.vertexAttribPointer(this.programs.three.aVertexPosition1, this.dataBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
       this.gl.uniform3f(this.uMinimum3d1, this.extents.xmin, this.extents.ymin, this.extents.zmin);
       this.gl.uniform3f(this.uMaximum3d1, this.extents.xmax, this.extents.ymax, this.extents.zmax);
       this.gl.uniform3f(this.uMinimum3d2, min1, min2, min3);
       this.gl.uniform3f(this.uMaximum3d2, max1, max2, max3);
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.threeBuffer2);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer2);
       this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
-      this.gl.vertexAttribPointer(this.programs.three.aVertexPosition2, this.threeBuffer2.itemSize, this.gl.FLOAT, false, 0, 0);
-      this.switch3d = 1;
+      this.gl.vertexAttribPointer(this.programs.three.aVertexPosition2, this.dataBuffer2.itemSize, this.gl.FLOAT, false, 0, 0);
+      this["switch"] = 1;
     } else {
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.threeBuffer1);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
       this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
-      this.gl.vertexAttribPointer(this.programs.three.aVertexPosition1, this.threeBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
+      this.gl.vertexAttribPointer(this.programs.three.aVertexPosition1, this.dataBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
       this.gl.uniform3f(this.uMinimum3d1, min1, min2, min3);
       this.gl.uniform3f(this.uMaximum3d1, max1, max2, max3);
       this.gl.uniform3f(this.uMinimum3d2, this.extents.xmin, this.extents.ymin, this.extents.zmin);
       this.gl.uniform3f(this.uMaximum3d2, this.extents.xmax, this.extents.ymax, this.extents.zmax);
-      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.threeBuffer2);
-      this.gl.vertexAttribPointer(this.programs.three.aVertexPosition2, this.threeBuffer2.itemSize, this.gl.FLOAT, false, 0, 0);
-      this.switch3d = 0;
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer2);
+      this.gl.vertexAttribPointer(this.programs.three.aVertexPosition2, this.dataBuffer2.itemSize, this.gl.FLOAT, false, 0, 0);
+      this["switch"] = 0;
     }
     this.extents = {
       xmin: min1,
@@ -705,7 +714,7 @@
     mat4.multiply(this.mvMatrix, this.mvMatrix, this.rotationMatrix);
     this._setMatrices(this.programs.three);
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-    return this.gl.drawArrays(this.gl.POINTS, 0, this.threeBuffer1.numItems);
+    return this.gl.drawArrays(this.gl.POINTS, 0, this.dataBuffer1.numItems);
   };
 
   Ruse.prototype.animate3d = function() {
@@ -716,7 +725,7 @@
     return intervalId = setInterval(function() {
       var uTime;
       i += 1;
-      uTime = _this.switch3d === 1 ? i / 150 : 1 - i / 150;
+      uTime = _this["switch"] === 1 ? i / 150 : 1 - i / 150;
       _this.gl.uniform1f(_this.uTime3d, uTime);
       _this.draw3d();
       if (i === 150) {
@@ -726,7 +735,7 @@
   };
 
   Shaders = {
-    vertex: ["attribute vec3 aVertexPosition1;", "attribute vec3 aVertexPosition2;", "uniform mat4 uMVMatrix;", "uniform mat4 uPMatrix;", "uniform float uMargin;", "uniform vec3 uMinimum1;", "uniform vec3 uMaximum1;", "uniform vec3 uMinimum2;", "uniform vec3 uMaximum2;", "uniform float uTime;", "uniform float uSwitch;", "void main(void) {", "gl_PointSize = 1.25;", "float scaleComponent = 2.0 * (1.0 - uMargin);", "float offsetComponent = (uMargin - 1.0);", "vec3 scale = vec3(scaleComponent, scaleComponent, 0.0);", "vec3 offset = vec3(offsetComponent, offsetComponent, 0.0);", "vec3 range1 = uMaximum1 - uMinimum1;", "vec3 range2 = uMaximum2 - uMinimum2;", "vec3 vertexPosition1 = scale / range1 * (aVertexPosition1 - uMinimum1) + offset;", "vec3 vertexPosition2 = scale / range2 * (aVertexPosition2 - uMinimum2) + offset;", "vec3 vertexPosition = (1.0 - uTime) * vertexPosition1 + uTime * vertexPosition2;", "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);", "}"].join("\n"),
+    vertex: ["attribute vec3 aVertexPosition1;", "attribute vec3 aVertexPosition2;", "uniform mat4 uMVMatrix;", "uniform mat4 uPMatrix;", "uniform float uMargin;", "uniform vec3 uMinimum1;", "uniform vec3 uMaximum1;", "uniform vec3 uMinimum2;", "uniform vec3 uMaximum2;", "uniform float uTime;", "void main(void) {", "gl_PointSize = 1.25;", "float scaleComponent = 2.0 * (1.0 - uMargin);", "float offsetComponent = (uMargin - 1.0);", "vec3 scale = vec3(scaleComponent, scaleComponent, 0.0);", "vec3 offset = vec3(offsetComponent, offsetComponent, 0.0);", "vec3 range1 = uMaximum1 - uMinimum1;", "vec3 range2 = uMaximum2 - uMinimum2;", "vec3 vertexPosition1 = scale / range1 * (aVertexPosition1 - uMinimum1) + offset;", "vec3 vertexPosition2 = scale / range2 * (aVertexPosition2 - uMinimum2) + offset;", "vec3 vertexPosition = (1.0 - uTime) * vertexPosition1 + uTime * vertexPosition2;", "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);", "}"].join("\n"),
     vertex3D: ["attribute vec3 aVertexPosition1;", "attribute vec3 aVertexPosition2;", "uniform mat4 uMVMatrix;", "uniform mat4 uPMatrix;", "uniform vec3 uMinimum1;", "uniform vec3 uMaximum1;", "uniform vec3 uMinimum2;", "uniform vec3 uMaximum2;", "uniform float uTime;", "void main(void) {", "gl_PointSize = 1.25;", "float offsetComponent = -1.0;", "vec3 scale = vec3(2.0, 2.0, 2.0);", "vec3 offset = vec3(-1.0, -1.0, -1.0);", "vec3 range1 = uMaximum1 - uMinimum1;", "vec3 range2 = uMaximum2 - uMinimum2;", "vec3 vertexPosition1 = scale / range1 * (aVertexPosition1 - uMinimum1) + offset;", "vec3 vertexPosition2 = scale / range2 * (aVertexPosition2 - uMinimum2) + offset;", "vec3 vertexPosition = (1.0 - uTime) * vertexPosition1 + uTime * vertexPosition2;", "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);", "}"].join("\n"),
     fragment: ["precision mediump float;", "void main(void) {", "gl_FragColor = vec4(0.0, 0.4431, 0.8980, 1.0);", "}"].join("\n")
   };

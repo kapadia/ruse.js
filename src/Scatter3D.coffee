@@ -3,6 +3,10 @@ Ruse = @astro.Ruse
 
 
 Ruse::scatter3D = (data) ->
+  unless @state is "scatter3D"
+    @switch = 0
+    @hasData = false
+  @state = "scatter3D"
   
   # Add perspective when working in three dimensions
   mat4.perspective(@pMatrix, 45.0, 1.0, 0.1, 100.0)
@@ -29,7 +33,7 @@ Ruse::scatter3D = (data) ->
     vertices[i + 1] = datum[@key2]
     vertices[i + 2] = datum[@key3]
   
-  unless @hasData3d
+  unless @hasData
     # NOTE: Another solution for the initial vertices is to create a GL program that is 
     #       run only once on the initial upload of data.  Subsequent plots will use
     #       another shader program that is created for transitions between buffers.  This is possible
@@ -43,7 +47,7 @@ Ruse::scatter3D = (data) ->
       initialVertices[i + 2] = 0
     
     # Upload initial buffer array to GPU
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer1)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer1)
     @gl.bufferData(@gl.ARRAY_BUFFER, initialVertices, @gl.STATIC_DRAW)
     
     # Store computed extents for use when creating axes
@@ -56,22 +60,22 @@ Ruse::scatter3D = (data) ->
       zmin: min3
       zmax: max3
     
-    @hasData3d = true
+    @hasData = true
   
-  @threeBuffer1.itemSize = vertexSize
-  @threeBuffer1.numItems = nVertices
+  @dataBuffer1.itemSize = vertexSize
+  @dataBuffer1.numItems = nVertices
   
-  @threeBuffer2.itemSize = vertexSize
-  @threeBuffer2.numItems = nVertices
+  @dataBuffer2.itemSize = vertexSize
+  @dataBuffer2.numItems = nVertices
   
   # Upload new data to appropriate buffer and delegate attribute pointers based according to switch
-  if @switch3d is 0
+  if @switch is 0
     
     #
     # Data transitions from aVertexPosition1 to aVertexPosition2
     #
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer1)
-    @gl.vertexAttribPointer(@programs.three.aVertexPosition1, @threeBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer1)
+    @gl.vertexAttribPointer(@programs.three.aVertexPosition1, @dataBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
     
     # Bind previous extents to uMinimum1 and uMaximum2
     @gl.uniform3f(@uMinimum3d1, @extents.xmin, @extents.ymin, @extents.zmin)
@@ -81,18 +85,18 @@ Ruse::scatter3D = (data) ->
     @gl.uniform3f(@uMinimum3d2, min1, min2, min3)
     @gl.uniform3f(@uMaximum3d2, max1, max2, max3)
     
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer2)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer2)
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
-    @gl.vertexAttribPointer(@programs.three.aVertexPosition2, @threeBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.vertexAttribPointer(@programs.three.aVertexPosition2, @dataBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
     
-    @switch3d = 1
+    @switch = 1
   else
     #
     # Data transitions from aVertexPosition2 to aVertexPosition1
     #
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer1)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer1)
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
-    @gl.vertexAttribPointer(@programs.three.aVertexPosition1, @threeBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.vertexAttribPointer(@programs.three.aVertexPosition1, @dataBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
     
     # Bind current extents to uMinimum1 and uMaximum2
     @gl.uniform3f(@uMinimum3d1, min1, min2, min3)
@@ -102,10 +106,10 @@ Ruse::scatter3D = (data) ->
     @gl.uniform3f(@uMinimum3d2, @extents.xmin, @extents.ymin, @extents.zmin)
     @gl.uniform3f(@uMaximum3d2, @extents.xmax, @extents.ymax, @extents.zmax)
     
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer2)
-    @gl.vertexAttribPointer(@programs.three.aVertexPosition2, @threeBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer2)
+    @gl.vertexAttribPointer(@programs.three.aVertexPosition2, @dataBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
     
-    @switch3d = 0
+    @switch = 0
   
   # Update computed extents for current data
   @extents =
@@ -117,6 +121,7 @@ Ruse::scatter3D = (data) ->
     zmax: max3
   
   @_setupMouseControls()
+  
   @animate3d()
 
 Ruse::draw3d = ->
@@ -127,7 +132,7 @@ Ruse::draw3d = ->
   @_setMatrices(@programs.three)
   
   @gl.clear(@gl.COLOR_BUFFER_BIT | @gl.DEPTH_BUFFER_BIT)
-  @gl.drawArrays(@gl.POINTS, 0, @threeBuffer1.numItems)
+  @gl.drawArrays(@gl.POINTS, 0, @dataBuffer1.numItems)
   
 Ruse::animate3d = ->
   @gl.useProgram(@programs.three)
@@ -135,7 +140,7 @@ Ruse::animate3d = ->
   i = 0
   intervalId = setInterval( =>
     i += 1
-    uTime = if @switch3d is 1 then i / 150 else 1 - i / 150
+    uTime = if @switch is 1 then i / 150 else 1 - i / 150
     @gl.uniform1f(@uTime3d, uTime)
     @draw3d()
     if i is 150

@@ -10,8 +10,6 @@ class Ruse
     
     compiled = gl.getShaderParameter(shader, gl.COMPILE_STATUS)
     unless compiled
-      lastError = gl.getShaderInfoLog(shader)
-      throw "Error compiling shader #{shader}: #{lastError}"
       gl.deleteShader(shader)
       return null
     
@@ -29,7 +27,6 @@ class Ruse
     
     linked = gl.getProgramParameter(program, gl.LINK_STATUS)
     unless linked
-      throw "Error in program linking: #{gl.getProgramInfoLog(program)}"
       gl.deleteProgram(program)
       return null
       
@@ -191,10 +188,8 @@ class Ruse
     @uMinimum3d2 = @gl.getUniformLocation(@programs.three, "uMinimum2")
     @uMaximum3d2 = @gl.getUniformLocation(@programs.three, "uMaximum2")
     @uTime3d = @gl.getUniformLocation(@programs.three, "uTime")
-    @switch3d = 0
     
     # Set initial values for uniforms
-    @switch = 0
     @gl.useProgram(@programs.ruse)
     @gl.uniform1f(@uTime, 0)
     @gl.uniform1f( @uMargin, @getMargin() )
@@ -214,14 +209,14 @@ class Ruse
     @gl.clear(@gl.COLOR_BUFFER_BIT | @gl.DEPTH_BUFFER_BIT)
     @gl.enable(@gl.DEPTH_TEST)
     
-    @state1Buffer = @gl.createBuffer()
-    @state2Buffer = @gl.createBuffer()
-    @finalBuffer = @state2Buffer
+    # Create buffers to store data
+    @dataBuffer1 = @gl.createBuffer()
+    @dataBuffer2 = @gl.createBuffer()
     
-    # Testing separate buffer for three dimensional data
-    @threeBuffer1 = @gl.createBuffer()
-    @threeBuffer2 = @gl.createBuffer()
-  
+    # Set parameters that store state
+    @switch = 0
+    @state = null
+    
   #
   # Draw functions
   #
@@ -229,7 +224,7 @@ class Ruse
   draw: ->
     @gl.clear(@gl.COLOR_BUFFER_BIT | @gl.DEPTH_BUFFER_BIT)
     @_setMatrices(@programs.ruse)
-    @gl.drawArrays(@drawMode, 0, @finalBuffer.numItems)
+    @gl.drawArrays(@drawMode, 0, @dataBuffer1.numItems)
   
   drawAxes: ->
     # Clear the axes canvas
