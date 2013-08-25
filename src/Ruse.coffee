@@ -207,6 +207,7 @@ class Ruse
     # Set parameters that store state
     @switch = 0
     @state = null
+    @isAnimating = false
     
   #
   # Draw functions
@@ -485,15 +486,18 @@ class Ruse
   
   animate: ->
     @gl.useProgram(@programs.ruse)
+    clearInterval(@intervalId) if @isAnimating
     
     i = 0
-    intervalId = setInterval( =>
+    @isAnimating = true
+    @intervalId = setInterval( =>
       i += 1
       uTime = if @switch is 1 then i / 45 else 1 - i / 45
       @gl.uniform1f(@uTime, uTime)
       @draw()
       if i is 45
-        clearInterval(intervalId)
+        clearInterval(@intervalId)
+        @isAnimating = false
     , 1000 / 60)
 
 

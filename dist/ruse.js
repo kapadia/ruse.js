@@ -161,6 +161,7 @@
       this.dataBuffer2 = this.gl.createBuffer();
       this["switch"] = 0;
       this.state = null;
+      this.isAnimating = false;
     }
 
     Ruse.prototype.draw = function() {
@@ -417,18 +418,23 @@
     };
 
     Ruse.prototype.animate = function() {
-      var i, intervalId,
+      var i,
         _this = this;
       this.gl.useProgram(this.programs.ruse);
+      if (this.isAnimating) {
+        clearInterval(this.intervalId);
+      }
       i = 0;
-      return intervalId = setInterval(function() {
+      this.isAnimating = true;
+      return this.intervalId = setInterval(function() {
         var uTime;
         i += 1;
         uTime = _this["switch"] === 1 ? i / 45 : 1 - i / 45;
         _this.gl.uniform1f(_this.uTime, uTime);
         _this.draw();
         if (i === 45) {
-          return clearInterval(intervalId);
+          clearInterval(_this.intervalId);
+          return _this.isAnimating = false;
         }
       }, 1000 / 60);
     };
