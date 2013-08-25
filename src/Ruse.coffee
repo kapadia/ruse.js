@@ -189,11 +189,6 @@ class Ruse
     @pMatrix = mat4.create()
     @mvMatrix = mat4.create()
     @rotationMatrix = mat4.create()
-    
-    mat4.identity(@pMatrix)
-    mat4.identity(@rotationMatrix)
-    mat4.identity(@mvMatrix)
-    
     @_setMatrices(@programs.ruse)
     
     @gl.viewport(0, 0, @width, @height)
@@ -485,7 +480,6 @@ class Ruse
     throw "Input data not recognized by Ruse."
   
   animate: ->
-    @gl.useProgram(@programs.ruse)
     clearInterval(@intervalId) if @isAnimating
     
     i = 0

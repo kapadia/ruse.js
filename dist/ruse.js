@@ -150,9 +150,6 @@
       this.pMatrix = mat4.create();
       this.mvMatrix = mat4.create();
       this.rotationMatrix = mat4.create();
-      mat4.identity(this.pMatrix);
-      mat4.identity(this.rotationMatrix);
-      mat4.identity(this.mvMatrix);
       this._setMatrices(this.programs.ruse);
       this.gl.viewport(0, 0, this.width, this.height);
       this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
@@ -420,7 +417,6 @@
     Ruse.prototype.animate = function() {
       var i,
         _this = this;
-      this.gl.useProgram(this.programs.ruse);
       if (this.isAnimating) {
         clearInterval(this.intervalId);
       }
@@ -530,7 +526,6 @@
       vertices[i + 11] = vertices[i + 3];
       x += clipspaceBinWidth;
     }
-    this.gl.useProgram(this.programs.ruse);
     _ref3 = this.delegateBuffers(), initialBuffer = _ref3[0], initialAttribute = _ref3[1], finalBuffer = _ref3[2], finalAttribute = _ref3[3];
     if (!this.hasData) {
       this.setInitialBuffer(initialBuffer, initialAttribute, vertexSize, nVertices, vertices);
@@ -555,7 +550,6 @@
       this.hasData = false;
     }
     this.state = "scatter2D";
-    this.gl.useProgram(this.programs.ruse);
     this.gl.uniform1f(this.uZComponent, 0.0);
     mat4.identity(this.pMatrix);
     mat4.identity(this.mvMatrix);
@@ -643,7 +637,6 @@
     this.state = "scatter3D";
     mat4.perspective(this.pMatrix, 45.0, 1.0, 0.1, 100.0);
     this.translateBy = [0.0, 0.0, -4.0];
-    this.gl.useProgram(this.programs.ruse);
     this.gl.uniform1f(this.uZComponent, 1.0);
     vertexSize = 3;
     nVertices = data.length;

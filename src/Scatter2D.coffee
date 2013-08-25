@@ -7,7 +7,6 @@ Ruse::scatter2D = (data) ->
     @hasData = false
   @state = "scatter2D"
   
-  @gl.useProgram(@programs.ruse)
   @gl.uniform1f(@uZComponent, 0.0)
   
   # Remove perspective if working in two dimensions

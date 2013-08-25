@@ -108,8 +108,6 @@ Ruse::histogram = (data) ->
     
     x += clipspaceBinWidth
   
-  @gl.useProgram(@programs.ruse)
-  
   [initialBuffer, initialAttribute, finalBuffer, finalAttribute] = @delegateBuffers()
   
   unless @hasData

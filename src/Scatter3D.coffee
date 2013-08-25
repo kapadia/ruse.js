@@ -12,7 +12,6 @@ Ruse::scatter3D = (data) ->
   mat4.perspective(@pMatrix, 45.0, 1.0, 0.1, 100.0)
   @translateBy = [0.0, 0.0, -4.0]
   
-  @gl.useProgram(@programs.ruse)
   @gl.uniform1f(@uZComponent, 1.0)
   
   # Proceed to handling the real data
