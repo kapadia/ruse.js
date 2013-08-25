@@ -1,6 +1,6 @@
 <html>
 <head>
-  <title>Paraboloid Example</title>
+  <title>Mathematical Equations</title>
   <link rel="stylesheet" href="astrojs.css" type="text/css" charset="utf-8">
   
   <style>
@@ -73,8 +73,8 @@
   function torus(steps) {
     var thetastep = 2 * Math.PI / steps;
     var phistep = 2 * Math.PI / steps;
-    var R = 10;
-    var r = 5;
+    var R = 6;
+    var r = 2;
     
     var arr = [];
     for(var i = 0; i < steps; i++) {
@@ -85,7 +85,32 @@
         
         var x = (R + r * Math.cos(phi)) * Math.cos(theta);
         var y = (R + r * Math.cos(phi)) * Math.sin(theta);
-        var z = r * Math.sin(phi)
+        var z = r * Math.sin(phi);
+        var obj = {
+          x: x,
+          y: y,
+          z: z
+        }
+        arr.push(obj);
+      }
+    }
+    return arr;
+  }
+  
+  function mobius(steps) {
+    var ustep = 2 * Math.PI / steps;
+    var vstep = 2 / steps;
+    
+    var arr = [];
+    for(var i = 0; i < steps; i++) {
+      
+      for(var j = 0; j < steps; j++) {
+        var u = i * ustep;
+        var v = -1 + j * vstep;
+        
+        var x = (1 + 0.5 * v * Math.cos(0.5 * u)) * Math.cos(u);
+        var y = (1 + 0.5 * v * Math.cos(0.5 * u)) * Math.sin(u);
+        var z = 0.5 * v * Math.sin(0.5 * u);
         var obj = {
           x: x,
           y: y,
@@ -103,26 +128,28 @@
     var el = document.querySelector("#ruse");
     
     // Initialize a ruse (aka plot) using an existing gl context
-    var ruse = new astro.Ruse(el, 500, 400);
+    var ruse = new astro.Ruse(el, 900, 600);
     
     if (ruse.gl === null) {
       alert("Sadly this demo will be very boring since you don't have WebGL.");
       return;
     }
     
-    var data1 = paraboloid(-1, 1, -1, 1, 100);
-    var data2 = saddle(-1, 1, -1, 1, 100);
-    var data3 = torus(100);
-    
-    ruse.plot(data1);
+    var steps = 300;
+    var data1 = paraboloid(-1, 1, -1, 1, steps);
+    var data2 = saddle(-1, 1, -1, 1, steps);
+    var data3 = torus(steps);
+    var data4 = mobius(steps);
     
     paraboloidEl = document.querySelector("p[name='paraboloid']")
     saddleEl = document.querySelector("p[name='saddle']")
     torusEl = document.querySelector("p[name='torus']")
+    mobiusEl = document.querySelector("p[name='mobius']")
     
     paraboloidEl.onclick = function() { ruse.plot(data1); }
     saddleEl.onclick = function() { ruse.plot(data2); }
     torusEl.onclick = function() { ruse.plot(data3); }
+    mobiusEl.onclick = function() { ruse.plot(data4); }
   }
   </script>
   
@@ -131,10 +158,12 @@
 <body onload='main()'>
   <div class='content'>
     <h3>Mathematical Functions</h3>
+    <p>Select a function to visualize.</p>
     <div class="functions">
       <p class="function" name="paraboloid">Paraboloid</p>
       <p class="function" name="saddle">Saddle</p>
       <p class="function" name="torus">Torus</p>
+      <p class="function" name="mobius">M&ouml;bius</p>
     </div>
     <div id="ruse"></div>
   </div>

@@ -12,32 +12,11 @@ Ruse::scatter3D = (data) ->
   # Proceed to handling the real data
   
   vertexSize = 3
-  
   nVertices = data.length
   vertices = new Float32Array(vertexSize * nVertices)
-  initialVertices = new Float32Array(vertexSize * nVertices)
   
   [@key1, @key2, @key3] = Object.keys(data[0])
-  
-  # Get minimum and maximum for each column
-  # TODO: Refactor getExtent to iterate once over multiple equal-sized arrays
-  i = nVertices
-  min1 = max1 = data[i - 1][@key1]
-  min2 = max2 = data[i - 1][@key2]
-  min3 = max3 = data[i - 1][@key3]
-  while i--
-    val1 = data[i][@key1]
-    val2 = data[i][@key2]
-    val3 = data[i][@key3]
-    
-    min1 = val1 if val1 < min1
-    max1 = val1 if val1 > max1
-    
-    min2 = val2 if val2 < min2
-    max2 = val2 if val2 > max2
-    
-    min3 = val3 if val3 < min3
-    max3 = val3 if val3 > max3
+  [ [min1, min2, min3], [max1, max2, max3] ] = @getExtentFromObjects(data)
   
   range1 = max1 - min1
   range2 = max2 - min2
@@ -46,8 +25,8 @@ Ruse::scatter3D = (data) ->
   for datum, index in data
     i = vertexSize * index
     
-    vertices[i] = initialVertices[i] = datum[@key1]
-    vertices[i + 1] = initialVertices[i + 1] = datum[@key2]
+    vertices[i] = datum[@key1]
+    vertices[i + 1] = datum[@key2]
     vertices[i + 2] = datum[@key3]
   
   unless @hasData3d
@@ -56,8 +35,11 @@ Ruse::scatter3D = (data) ->
     #       another shader program that is created for transitions between buffers.  This is possible
     #       because programs can share buffers (i think ...).  This would provide a more memory efficient
     #       solution, as only one typed array needs to be initialized on the client.s
+    initialVertices = new Float32Array(vertexSize * nVertices)
     for datum, index in data
       i = vertexSize * index
+      initialVertices[i] = datum[@key1]
+      initialVertices[i + 1] = datum[@key2]
       initialVertices[i + 2] = 0
     
     # Upload initial buffer array to GPU
@@ -65,7 +47,7 @@ Ruse::scatter3D = (data) ->
     @gl.bufferData(@gl.ARRAY_BUFFER, initialVertices, @gl.STATIC_DRAW)
     
     # Store computed extents for use when creating axes
-    # This is stored here so that code below perceives it as previous values
+    # This is stored here so that following code perceives it as previous values
     @extents =
       xmin: min1
       xmax: max1

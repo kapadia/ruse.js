@@ -31,10 +31,10 @@ Shaders =
         "vec3 range1 = uMaximum1 - uMinimum1;"
         "vec3 range2 = uMaximum2 - uMinimum2;"
         
-        "vec3 points1 = scale / range1 * (aVertexPosition1 - uMinimum1) + offset;"
-        "vec3 points2 = scale / range2 * (aVertexPosition2 - uMinimum2) + offset;"
+        "vec3 vertexPosition1 = scale / range1 * (aVertexPosition1 - uMinimum1) + offset;"
+        "vec3 vertexPosition2 = scale / range2 * (aVertexPosition2 - uMinimum2) + offset;"
         
-        "vec3 vertexPosition = (1.0 - abs(uTime - uSwitch)) * points2 + abs(uTime - uSwitch) * points1;"
+        "vec3 vertexPosition = (1.0 - uTime) * vertexPosition1 + uTime * vertexPosition2;"
         "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);"
     "}"
   ].join("\n")

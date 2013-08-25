@@ -185,7 +185,6 @@ class Ruse
     @uMinimum2 = @gl.getUniformLocation(@programs.ruse, "uMinimum2")
     @uMaximum2 = @gl.getUniformLocation(@programs.ruse, "uMaximum2")
     @uTime = @gl.getUniformLocation(@programs.ruse, "uTime")
-    @uSwitch = @gl.getUniformLocation(@programs.ruse, "uSwitch")
     
     @uMinimum3d1 = @gl.getUniformLocation(@programs.three, "uMinimum1")
     @uMaximum3d1 = @gl.getUniformLocation(@programs.three, "uMaximum1")
@@ -198,7 +197,6 @@ class Ruse
     @switch = 0
     @gl.useProgram(@programs.ruse)
     @gl.uniform1f(@uTime, 0)
-    @gl.uniform1f(@uSwitch, @switch)
     @gl.uniform1f( @uMargin, @getMargin() )
     
     # Set up camera parameters
@@ -350,33 +348,6 @@ class Ruse
     #       when tick values and axes labels are requested.
     return @margin + (2 * @fontSize + @axisPadding) * 2 / @height
   
-  # Sets an initial state for the first buffer.  Only called once.
-  setInitialBuffer: (buffer, attribute, vertexSize, nVertices, vertices) ->
-    initialVertices = new Float32Array(vertexSize * nVertices)
-    
-    for value, index in vertices by 2
-      initialVertices[index] = vertices[index]
-      initialVertices[index + 1] = -1.0 + @getMargin()
-      
-    @gl.bindBuffer(@gl.ARRAY_BUFFER, buffer)
-    @gl.bufferData(@gl.ARRAY_BUFFER, initialVertices, @gl.STATIC_DRAW)
-    buffer.itemSize = vertexSize
-    buffer.numItems = nVertices
-    @gl.vertexAttribPointer(attribute, buffer.itemSize, @gl.FLOAT, false, 0, 0)
-  
-  delegateBuffers: ->
-    if @switch is 0
-      initialBuffer = @state1Buffer
-      finalBuffer = @state2Buffer
-      initialAttribute = @programs.ruse.aVertexPosition2
-      finalAttribute = @programs.ruse.aVertexPosition1
-    else
-      initialBuffer = @state2Buffer
-      finalBuffer = @state1Buffer
-      initialAttribute = @programs.ruse.aVertexPosition1
-      finalAttribute = @programs.ruse.aVertexPosition2
-    return [initialBuffer, initialAttribute, finalBuffer, finalAttribute]
-  
   #
   # Transformation functions
   #
@@ -423,6 +394,24 @@ class Ruse
       
     return steps
   
+  getExtentFromObjects: (data) ->
+    
+    keys = Object.keys(data[0])
+    i = data.length
+    minimums = []
+    maximums = []
+    
+    for key in keys
+      minimums.push data[i - 1][key]
+      maximums.push data[i - 1][key]
+    
+    while i--
+      for key, index in keys
+        val = data[i][key]
+        minimums[index] = val if val < minimums[index]
+        maximums[index] = val if val > maximums[index]
+    return [minimums, maximums]
+  
   # Compute the minimum and maximum value of an array with support for NaN values.
   getExtent: (arr) ->
     
@@ -434,7 +423,10 @@ class Ruse
       
       min = max = value
       break
-      
+    
+    if index is -1
+      return [NaN, NaN]
+    
     # Continue loop to find extent
     while index--
       value = arr[index]
@@ -504,16 +496,11 @@ class Ruse
     i = 0
     intervalId = setInterval( =>
       i += 1
-      @gl.uniform1f(@uTime, i / 45)
+      uTime = if @switch is 1 then i / 45 else 1 - i / 45
+      @gl.uniform1f(@uTime, uTime)
       @draw()
       if i is 45
         clearInterval(intervalId)
-        
-        # Reset timer and flip switch
-        @switch = if @switch is 0 then 1 else 0
-        @gl.uniform1f(@uTime, 0)
-        @gl.uniform1f(@uSwitch, @switch)
-        @draw()
     , 1000 / 60)
 
 
