@@ -1,24 +1,6 @@
 
 Ruse = @astro.Ruse
 
-# Attributes are peculiar.  Each attribute across all programs *must* be associated with a buffer.
-# Associate with junk data for now.
-Ruse::spoofAttributes = ->
-  
-  spoof = new Float32Array([0, 0])
-  
-  @gl.bindBuffer(@gl.ARRAY_BUFFER, @state1Buffer)
-  @gl.bufferData(@gl.ARRAY_BUFFER, spoof, @gl.STATIC_DRAW)
-  @state1Buffer.itemSize = 2
-  @state1Buffer.numItems = 1
-  @gl.vertexAttribPointer(@programs.ruse.points1Attribute, @state1Buffer.itemSize, @gl.FLOAT, false, 0, 0)
-  
-  @gl.bindBuffer(@gl.ARRAY_BUFFER, @state2Buffer)
-  @gl.bufferData(@gl.ARRAY_BUFFER, spoof, @gl.STATIC_DRAW)
-  @state2Buffer.itemSize = 2
-  @state2Buffer.numItems = 1
-  @gl.vertexAttribPointer(@programs.ruse.points2Attribute, @state2Buffer.itemSize, @gl.FLOAT, false, 0, 0)
-
 
 Ruse::scatter3D = (data) ->
   
@@ -26,12 +8,9 @@ Ruse::scatter3D = (data) ->
   mat4.perspective(@pMatrix, 45.0, 1.0, 0.1, 100.0)
   
   @gl.useProgram(@programs.three)
-  @spoofAttributes()
   
   # Proceed to handling the real data
   
-  # Compute margin that incorporates spaces needed for axes labels
-  margin = @getMargin()
   vertexSize = 3
   
   nVertices = data.length
@@ -73,10 +52,10 @@ Ruse::scatter3D = (data) ->
   
   unless @hasData3d
     # NOTE: Another solution for the initial vertices is to create a GL program that is 
-    #       run only once to run on the initial upload of data.  Subsequent plots will use
+    #       run only once on the initial upload of data.  Subsequent plots will use
     #       another shader program that is created for transitions between buffers.  This is possible
     #       because programs can share buffers (i think ...).  This would provide a more memory efficient
-    #       solution, as only one typed array needs to be initialized on the client.
+    #       solution, as only one typed array needs to be initialized on the client.s
     for datum, index in data
       i = vertexSize * index
       initialVertices[i + 2] = 0
@@ -110,7 +89,7 @@ Ruse::scatter3D = (data) ->
     # Data transitions from aVertexPosition1 to aVertexPosition2
     #
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer1)
-    @gl.vertexAttribPointer(@programs.three.vertexPosition1Attribute, @threeBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.vertexAttribPointer(@programs.three.aVertexPosition1, @threeBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
     
     # Bind previous extents to uMinimum1 and uMaximum2
     @gl.uniform3f(@uMinimum3d1, @extents.xmin, @extents.ymin, @extents.zmin)
@@ -122,7 +101,7 @@ Ruse::scatter3D = (data) ->
     
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer2)
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
-    @gl.vertexAttribPointer(@programs.three.vertexPosition2Attribute, @threeBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.vertexAttribPointer(@programs.three.aVertexPosition2, @threeBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
     
     @switch3d = 1
   else
@@ -131,7 +110,7 @@ Ruse::scatter3D = (data) ->
     #
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer1)
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
-    @gl.vertexAttribPointer(@programs.three.vertexPosition1Attribute, @threeBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.vertexAttribPointer(@programs.three.aVertexPosition1, @threeBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
     
     # Bind current extents to uMinimum1 and uMaximum2
     @gl.uniform3f(@uMinimum3d1, min1, min2, min3)
@@ -142,7 +121,7 @@ Ruse::scatter3D = (data) ->
     @gl.uniform3f(@uMaximum3d2, @extents.xmax, @extents.ymax, @extents.zmax)
     
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @threeBuffer2)
-    @gl.vertexAttribPointer(@programs.three.vertexPosition2Attribute, @threeBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.vertexAttribPointer(@programs.three.aVertexPosition2, @threeBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
     
     @switch3d = 0
   

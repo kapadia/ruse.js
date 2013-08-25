@@ -32,43 +32,14 @@ class Ruse
       throw "Error in program linking: #{gl.getProgramInfoLog(program)}"
       gl.deleteProgram(program)
       return null
-    
-    gl.useProgram(program)
-    
-    program.points1Attribute = gl.getAttribLocation(program, "aPoints1")
-    gl.enableVertexAttribArray(program.points1Attribute)
-    
-    program.points2Attribute = gl.getAttribLocation(program, "aPoints2")
-    gl.enableVertexAttribArray(program.points2Attribute)
-    
-    program.uPMatrix = gl.getUniformLocation(program, "uPMatrix")
-    program.uMVMatrix = gl.getUniformLocation(program, "uMVMatrix")
-    
-    return program
-    
-  _createProgram3D: (gl, vertexShader, fragmentShader) ->
-    vertexShader = @_loadShader(gl, vertexShader, gl.VERTEX_SHADER)
-    fragmentShader = @_loadShader(gl, fragmentShader, gl.FRAGMENT_SHADER)
-    
-    program = gl.createProgram()
-    
-    gl.attachShader(program, vertexShader)
-    gl.attachShader(program, fragmentShader)
-    gl.linkProgram(program)
-    
-    linked = gl.getProgramParameter(program, gl.LINK_STATUS)
-    unless linked
-      throw "Error in program linking: #{gl.getProgramInfoLog(program)}"
-      gl.deleteProgram(program)
-      return null
       
     gl.useProgram(program)
     
-    program.vertexPosition1Attribute = gl.getAttribLocation(program, "aVertexPosition1")
-    gl.enableVertexAttribArray(program.vertexPosition1Attribute)
+    program.aVertexPosition1 = gl.getAttribLocation(program, "aVertexPosition1")
+    gl.enableVertexAttribArray(program.aVertexPosition1)
     
-    program.vertexPosition2Attribute = gl.getAttribLocation(program, "aVertexPosition2")
-    gl.enableVertexAttribArray(program.vertexPosition2Attribute)
+    program.aVertexPosition2 = gl.getAttribLocation(program, "aVertexPosition2")
+    gl.enableVertexAttribArray(program.aVertexPosition2)
     
     program.uPMatrix = gl.getUniformLocation(program, "uPMatrix")
     program.uMVMatrix = gl.getUniformLocation(program, "uMVMatrix")
@@ -204,7 +175,7 @@ class Ruse
     shaders = @constructor.Shaders
     @programs = {}
     @programs["ruse"] = @_createProgram(@gl, shaders.vertex, shaders.fragment)
-    @programs["three"] = @_createProgram3D(@gl, shaders.vertex3D, shaders.fragment)
+    @programs["three"] = @_createProgram(@gl, shaders.vertex3D, shaders.fragment)
     
     # Get uniforms
     @uMargin = @gl.getUniformLocation(@programs.ruse, "uMargin")
@@ -397,13 +368,13 @@ class Ruse
     if @switch is 0
       initialBuffer = @state1Buffer
       finalBuffer = @state2Buffer
-      initialAttribute = @programs.ruse.points2Attribute
-      finalAttribute = @programs.ruse.points1Attribute
+      initialAttribute = @programs.ruse.aVertexPosition2
+      finalAttribute = @programs.ruse.aVertexPosition1
     else
       initialBuffer = @state2Buffer
       finalBuffer = @state1Buffer
-      initialAttribute = @programs.ruse.points1Attribute
-      finalAttribute = @programs.ruse.points2Attribute
+      initialAttribute = @programs.ruse.aVertexPosition1
+      finalAttribute = @programs.ruse.aVertexPosition2
     return [initialBuffer, initialAttribute, finalBuffer, finalAttribute]
   
   #
@@ -526,17 +497,6 @@ class Ruse
         
     # If code gets here, then something wrong with input data
     throw "Input data not recognized by Ruse."
-  
-  step: (i) ->
-    @gl.uniform1f(@uTime, i / 45)
-    @draw()
-  
-  reset: ->
-    # Reset timer and flip switch
-    @switch = if @switch is 0 then 1 else 0
-    @gl.uniform1f(@uTime, 0)
-    @gl.uniform1f(@uSwitch, @switch)
-    @draw()
   
   animate: ->
     @gl.useProgram(@programs.ruse)

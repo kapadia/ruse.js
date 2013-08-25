@@ -2,8 +2,8 @@
 Shaders =
   
   vertex: [
-    "attribute vec3 aPoints1;"
-    "attribute vec3 aPoints2;"
+    "attribute vec3 aVertexPosition1;"
+    "attribute vec3 aVertexPosition2;"
     
     "uniform mat4 uMVMatrix;"
     "uniform mat4 uPMatrix;"
@@ -31,8 +31,8 @@ Shaders =
         "vec3 range1 = uMaximum1 - uMinimum1;"
         "vec3 range2 = uMaximum2 - uMinimum2;"
         
-        "vec3 points1 = scale / range1 * (aPoints1 - uMinimum1) + offset;"
-        "vec3 points2 = scale / range2 * (aPoints2 - uMinimum2) + offset;"
+        "vec3 points1 = scale / range1 * (aVertexPosition1 - uMinimum1) + offset;"
+        "vec3 points2 = scale / range2 * (aVertexPosition2 - uMinimum2) + offset;"
         
         "vec3 vertexPosition = (1.0 - abs(uTime - uSwitch)) * points2 + abs(uTime - uSwitch) * points1;"
         "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);"

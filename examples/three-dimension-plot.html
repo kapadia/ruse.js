@@ -28,16 +28,19 @@
     // var key1 = "RA";
     // var key2 = "DEC";
     // var key3 = "logNH";
-    var key1 = "CX";
-    var key2 = "CY";
-    var key3 = "CZ";
+    // var key1 = "CX";
+    // var key2 = "CY";
+    // var key3 = "CZ";
     
     var path = "data/plates-dr9.fits";
     // var path = "data/dr7qso.fit";
+    // var path = "data/big.fits";
     
     new astro.FITS(path, function(f) {
       var table = f.getDataUnit(1);
       var header = f.getHeader(1);
+      
+      console.log(table.rows);
       
       // Set up drop down menus
       var xAxisEl = document.querySelector('select[class="x-axis"]');
