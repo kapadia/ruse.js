@@ -40,6 +40,27 @@
       return program;
     };
 
+    Ruse.prototype._createProgramAxes = function(gl, vertexShader, fragmentShader) {
+      var linked, program;
+      vertexShader = this._loadShader(gl, vertexShader, gl.VERTEX_SHADER);
+      fragmentShader = this._loadShader(gl, fragmentShader, gl.FRAGMENT_SHADER);
+      program = gl.createProgram();
+      gl.attachShader(program, vertexShader);
+      gl.attachShader(program, fragmentShader);
+      gl.linkProgram(program);
+      linked = gl.getProgramParameter(program, gl.LINK_STATUS);
+      if (!linked) {
+        gl.deleteProgram(program);
+        return null;
+      }
+      gl.useProgram(program);
+      program.aVertexPosition = gl.getAttribLocation(program, "aVertexPosition");
+      gl.enableVertexAttribArray(program.aVertexPosition);
+      program.uPMatrix = gl.getUniformLocation(program, "uPMatrix");
+      program.uMVMatrix = gl.getUniformLocation(program, "uMVMatrix");
+      return program;
+    };
+
     Ruse.prototype._setMatrices = function(program) {
       this.gl.useProgram(program);
       this.gl.uniformMatrix4fv(program.uPMatrix, false, this.pMatrix);
@@ -138,6 +159,7 @@
       shaders = this.constructor.Shaders;
       this.programs = {};
       this.programs["ruse"] = this._createProgram(this.gl, shaders.vertex, shaders.fragment);
+      this.programs["axes"] = this._createProgramAxes(this.gl, shaders.axesVertex, shaders.fragment);
       this.uMinimum1 = this.gl.getUniformLocation(this.programs.ruse, "uMinimum1");
       this.uMaximum1 = this.gl.getUniformLocation(this.programs.ruse, "uMaximum1");
       this.uMinimum2 = this.gl.getUniformLocation(this.programs.ruse, "uMinimum2");
@@ -156,12 +178,14 @@
       this.gl.enable(this.gl.DEPTH_TEST);
       this.dataBuffer1 = this.gl.createBuffer();
       this.dataBuffer2 = this.gl.createBuffer();
+      this.axesBuffer = this.gl.createBuffer();
       this["switch"] = 0;
       this.state = null;
       this.isAnimating = false;
     }
 
     Ruse.prototype.draw = function() {
+      this.gl.useProgram(this.programs.ruse);
       mat4.identity(this.mvMatrix);
       mat4.translate(this.mvMatrix, this.mvMatrix, this.translateBy);
       mat4.multiply(this.mvMatrix, this.mvMatrix, this.rotationMatrix);
@@ -172,6 +196,27 @@
 
     Ruse.prototype.removeAxes = function() {
       return this.axesCanvas.width = this.axesCanvas.width;
+    };
+
+    Ruse.prototype.setupAxes3d = function() {
+      var vertices;
+      vertices = new Float32Array([-1.0, -0.1, 0.0, 1.0, -0.1, 0.0, -1.0, -0.1, 0.0]);
+      this.axesBuffer.itemSize = 3;
+      this.axesBuffer.numItems = 1;
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.axesBuffer);
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
+      return this.gl.vertexAttribPointer(this.programs.axes.aVertexPosition, this.axesBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
+    };
+
+    Ruse.prototype.drawAxes3d = function() {
+      this.gl.useProgram(this.programs.axes);
+      console.log('drawAxes3d');
+      mat4.identity(this.mvMatrix);
+      mat4.translate(this.mvMatrix, this.mvMatrix, this.translateBy);
+      mat4.multiply(this.mvMatrix, this.mvMatrix, this.rotationMatrix);
+      this._setMatrices(this.programs.axes);
+      this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+      return this.dl.drawArrays(this.gl.TRIANGLES, 0, this.axesBuffer.numItems);
     };
 
     Ruse.prototype.drawAxes = function() {
@@ -717,6 +762,7 @@
 
   Shaders = {
     vertex: ["attribute vec3 aVertexPosition1;", "attribute vec3 aVertexPosition2;", "uniform mat4 uMVMatrix;", "uniform mat4 uPMatrix;", "uniform float uMargin;", "uniform float uZComponent;", "uniform vec3 uMinimum1;", "uniform vec3 uMaximum1;", "uniform vec3 uMinimum2;", "uniform vec3 uMaximum2;", "uniform float uTime;", "void main(void) {", "gl_PointSize = 1.25;", "float scaleComponent = 2.0 * (1.0 - uMargin);", "float offsetComponent = (uMargin - 1.0);", "vec3 scale = vec3(scaleComponent, scaleComponent, uZComponent * scaleComponent);", "vec3 offset = vec3(offsetComponent, offsetComponent, uZComponent * offsetComponent);", "vec3 range1 = uMaximum1 - uMinimum1;", "vec3 range2 = uMaximum2 - uMinimum2;", "vec3 vertexPosition1 = scale / range1 * (aVertexPosition1 - uMinimum1) + offset;", "vec3 vertexPosition2 = scale / range2 * (aVertexPosition2 - uMinimum2) + offset;", "vec3 vertexPosition = (1.0 - uTime) * vertexPosition1 + uTime * vertexPosition2;", "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);", "}"].join("\n"),
+    axesVertex: ["attribute vec3 aVertexPosition;", "uniform mat4 uMVMatrix;", "uniform mat4 uPMatrix;", "void main(void) {", "gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);", "}"].join("\n"),
     fragment: ["precision mediump float;", "void main(void) {", "gl_FragColor = vec4(0.0, 0.4431, 0.8980, 1.0);", "}"].join("\n")
   };
 

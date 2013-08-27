@@ -42,6 +42,31 @@ class Ruse
     program.uMVMatrix = gl.getUniformLocation(program, "uMVMatrix")
     
     return program
+    
+  _createProgramAxes: (gl, vertexShader, fragmentShader) ->
+    vertexShader = @_loadShader(gl, vertexShader, gl.VERTEX_SHADER)
+    fragmentShader = @_loadShader(gl, fragmentShader, gl.FRAGMENT_SHADER)
+    
+    program = gl.createProgram()
+    
+    gl.attachShader(program, vertexShader)
+    gl.attachShader(program, fragmentShader)
+    gl.linkProgram(program)
+    
+    linked = gl.getProgramParameter(program, gl.LINK_STATUS)
+    unless linked
+      gl.deleteProgram(program)
+      return null
+      
+    gl.useProgram(program)
+    
+    program.aVertexPosition = gl.getAttribLocation(program, "aVertexPosition")
+    gl.enableVertexAttribArray(program.aVertexPosition)
+    
+    program.uPMatrix = gl.getUniformLocation(program, "uPMatrix")
+    program.uMVMatrix = gl.getUniformLocation(program, "uMVMatrix")
+    
+    return program
   
   _setMatrices: (program) ->
     @gl.useProgram(program)
@@ -171,6 +196,7 @@ class Ruse
     shaders = @constructor.Shaders
     @programs = {}
     @programs["ruse"] = @_createProgram(@gl, shaders.vertex, shaders.fragment)
+    @programs["axes"] = @_createProgramAxes(@gl, shaders.axesVertex, shaders.fragment)
     
     # Get uniforms
     @uMinimum1 = @gl.getUniformLocation(@programs.ruse, "uMinimum1")
@@ -199,6 +225,9 @@ class Ruse
     @dataBuffer1 = @gl.createBuffer()
     @dataBuffer2 = @gl.createBuffer()
     
+    # Create buffer for 3D axes
+    @axesBuffer = @gl.createBuffer()
+    
     # Set parameters that store state
     @switch = 0
     @state = null
@@ -209,6 +238,8 @@ class Ruse
   #
   
   draw: ->
+    @gl.useProgram(@programs.ruse)
+    
     mat4.identity(@mvMatrix)
     mat4.translate(@mvMatrix, @mvMatrix, @translateBy)
     mat4.multiply(@mvMatrix, @mvMatrix, @rotationMatrix)
@@ -219,6 +250,30 @@ class Ruse
   
   removeAxes: ->
     @axesCanvas.width = @axesCanvas.width
+  
+  setupAxes3d: ->
+    vertices = new Float32Array([
+      -1.0, -0.1, 0.0,
+      1.0, -0.1, 0.0,
+      -1.0, -0.1, 0.0,
+    ])
+    @axesBuffer.itemSize = 3
+    @axesBuffer.numItems = 1
+    
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @axesBuffer)
+    @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
+    @gl.vertexAttribPointer(@programs.axes.aVertexPosition, @axesBuffer.itemSize, @gl.FLOAT, false, 0, 0)
+  
+  drawAxes3d: ->
+    @gl.useProgram(@programs.axes)
+    console.log 'drawAxes3d'
+    mat4.identity(@mvMatrix)
+    mat4.translate(@mvMatrix, @mvMatrix, @translateBy)
+    mat4.multiply(@mvMatrix, @mvMatrix, @rotationMatrix)
+    
+    @_setMatrices(@programs.axes)
+    @gl.clear(@gl.COLOR_BUFFER_BIT | @gl.DEPTH_BUFFER_BIT)
+    @dl.drawArrays(@gl.TRIANGLES, 0, @axesBuffer.numItems)
   
   drawAxes: ->
     # Clear the axes canvas
