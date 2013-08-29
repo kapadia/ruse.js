@@ -562,15 +562,15 @@
     }
     h = this.getHistogram(data, dataMin, dataMax, this.bins);
     _ref1 = this.getExtent(h), histMin = _ref1[0], histMax = _ref1[1];
-    clipspaceSize = 2.0 - 2 * margin;
-    clipspaceLower = -1.0 + margin;
-    clipspaceUpper = 1.0 - margin;
+    clipspaceSize = 2.0;
     clipspaceBinWidth = clipspaceSize / this.bins;
+    clipspaceLower = -1.0;
+    clipspaceUpper = 1.0;
     vertexSize = 2;
     nVertices = 6 * this.bins;
     vertices = new Float32Array(vertexSize * nVertices);
-    x = -1.0 + margin;
-    y = y0 = -1.0 + margin;
+    x = -1.0;
+    y = y0 = -1.0;
     for (index = _i = 0, _len = h.length; _i < _len; index = ++_i) {
       value = h[index];
       i = 12 * index;
@@ -592,8 +592,8 @@
       initialVertices = new Float32Array(vertexSize * nVertices);
       for (i = _j = 0, _len1 = vertices.length; _j < _len1; i = _j += 2) {
         datum = vertices[i];
-        initialVertices[i] = datum[this.key1];
-        initialVertices[i + 1] = margin;
+        initialVertices[i] = datum;
+        initialVertices[i + 1] = -1.0;
       }
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
       this.gl.bufferData(this.gl.ARRAY_BUFFER, initialVertices, this.gl.STATIC_DRAW);
@@ -609,13 +609,13 @@
     this.dataBuffer1.numItems = nVertices;
     this.dataBuffer2.itemSize = vertexSize;
     this.dataBuffer2.numItems = nVertices;
+    this.gl.uniform3f(this.uMinimum1, -1, -1, 0);
+    this.gl.uniform3f(this.uMaximum1, 1, 1, 1);
+    this.gl.uniform3f(this.uMinimum2, -1, -1, 0);
+    this.gl.uniform3f(this.uMaximum2, 1, 1, 1);
     if (this["switch"] === 0) {
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
       this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition1, this.dataBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
-      this.gl.uniform3f(this.uMinimum1, -1, 1, 0);
-      this.gl.uniform3f(this.uMaximum1, -1, 1, 1);
-      this.gl.uniform3f(this.uMinimum2, -1, 1, 0);
-      this.gl.uniform3f(this.uMaximum2, -1, 1, 1);
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer2);
       this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
       this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition2, this.dataBuffer2.itemSize, this.gl.FLOAT, false, 0, 0);
@@ -624,10 +624,6 @@
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
       this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
       this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition1, this.dataBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
-      this.gl.uniform3f(this.uMinimum1, -1, 1, 0);
-      this.gl.uniform3f(this.uMaximum1, -1, 1, 1);
-      this.gl.uniform3f(this.uMinimum2, -1, 1, 0);
-      this.gl.uniform3f(this.uMaximum2, -1, 1, 1);
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer2);
       this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition2, this.dataBuffer2.itemSize, this.gl.FLOAT, false, 0, 0);
       this["switch"] = 0;

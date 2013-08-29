@@ -80,19 +80,18 @@ Ruse::histogram = (data) ->
   [histMin, histMax] = @getExtent(h)
   
   # Generate vertices describing histogram
-  clipspaceSize = 2.0 - 2 * margin
-  
-  clipspaceLower = -1.0 + margin
-  clipspaceUpper = 1.0 - margin
-  
+  clipspaceSize = 2.0
   clipspaceBinWidth = clipspaceSize / @bins
+  
+  clipspaceLower = -1.0
+  clipspaceUpper = 1.0
   
   vertexSize = 2
   nVertices = 6 * @bins
   vertices = new Float32Array(vertexSize * nVertices)
   
-  x = -1.0 + margin
-  y = y0 = -1.0 + margin
+  x = -1.0
+  y = y0 = -1.0
   
   for value, index in h
     i = 12 * index
@@ -116,8 +115,8 @@ Ruse::histogram = (data) ->
   unless @hasData
     initialVertices = new Float32Array(vertexSize * nVertices)
     for datum, i in vertices by 2
-      initialVertices[i] = datum[@key1]
-      initialVertices[i + 1] = margin
+      initialVertices[i] = datum
+      initialVertices[i + 1] = -1.0
       
     # Upload initial buffer array to GPU
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer1)
@@ -140,30 +139,21 @@ Ruse::histogram = (data) ->
   @dataBuffer2.itemSize = vertexSize
   @dataBuffer2.numItems = nVertices
   
+  # Bind previous extents to uMinimum1 and uMaximum2
+  @gl.uniform3f(@uMinimum1, -1, -1, 0)
+  @gl.uniform3f(@uMaximum1, 1, 1, 1)
+  
+  # Bind current extents to uMinimum2 and uMaximum2
+  @gl.uniform3f(@uMinimum2, -1, -1, 0)
+  @gl.uniform3f(@uMaximum2, 1, 1, 1)
+  
   # Upload new data to appropriate buffer and delegate attribute pointers based according to switch
   if @switch is 0
-    
     #
     # Data transitions from aVertexPosition1 to aVertexPosition2
     #
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer1)
     @gl.vertexAttribPointer(@programs.ruse.aVertexPosition1, @dataBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
-
-    # Bind previous extents to uMinimum1 and uMaximum2
-    @gl.uniform3f(@uMinimum1, -1, 1, 0)
-    @gl.uniform3f(@uMaximum1, -1, 1, 1)
-    
-    # Bind current extents to uMinimum2 and uMaximum2
-    @gl.uniform3f(@uMinimum2, -1, 1, 0)
-    @gl.uniform3f(@uMaximum2, -1, 1, 1)
-    
-    # # Bind previous extents to uMinimum1 and uMaximum2
-    # @gl.uniform3f(@uMinimum1, @extents.xmin, @extents.ymin, 0)
-    # @gl.uniform3f(@uMaximum1, @extents.xmax, @extents.ymax, 1)
-    # 
-    # # Bind current extents to uMinimum2 and uMaximum2
-    # @gl.uniform3f(@uMinimum2, dataMin, histMin, 0)
-    # @gl.uniform3f(@uMaximum2, dataMax, histMax, 1)
     
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer2)
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
@@ -178,22 +168,6 @@ Ruse::histogram = (data) ->
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer1)
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
     @gl.vertexAttribPointer(@programs.ruse.aVertexPosition1, @dataBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
-    
-    # Bind previous extents to uMinimum1 and uMaximum2
-    @gl.uniform3f(@uMinimum1, -1, 1, 0)
-    @gl.uniform3f(@uMaximum1, -1, 1, 1)
-    
-    # Bind current extents to uMinimum2 and uMaximum2
-    @gl.uniform3f(@uMinimum2, -1, 1, 0)
-    @gl.uniform3f(@uMaximum2, -1, 1, 1)
-    
-    # # Bind current extents to uMinimum1 and uMaximum2
-    # @gl.uniform3f(@uMinimum1, dataMin, histMin, 0)
-    # @gl.uniform3f(@uMaximum1, dataMax, histMax, 1)
-    # 
-    # # Bind previous extents to uMinimum2 and uMaximum2
-    # @gl.uniform3f(@uMinimum2, @extents.xmin, @extents.ymin, 0)
-    # @gl.uniform3f(@uMaximum2, @extents.xmax, @extents.ymax, 1)
     
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer2)
     @gl.vertexAttribPointer(@programs.ruse.aVertexPosition2, @dataBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
