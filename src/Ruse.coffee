@@ -110,6 +110,10 @@ class Ruse
       @xOldOffset = x
       @yOldOffset = y
       
+      # if e.shiftKey
+      #   sensitivity = 0.001
+      #   vec3.add(@translateBy, @translateBy, [sensitivity * deltaX, sensitivity * deltaY, 0])
+      
       @draw()
       @drawAxes3d()
       
@@ -139,7 +143,17 @@ class Ruse
     
     @axesCanvas.onmouseover = (e) =>
       @drag = false
-  
+    
+    # TODO: Does this work in Firefox?!?
+    # TODO: Adjust axis lineWidth based on zoom
+    @axesCanvas.onmousewheel = (e) =>
+      e.preventDefault()
+      
+      sensitivity = 0.001
+      vec3.add(@translateBy, @translateBy, [0, 0, e.wheelDeltaY * sensitivity])
+      
+      @draw()
+      @drawAxes3d()
   
   constructor: (arg, width, height) ->
     

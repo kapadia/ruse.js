@@ -108,8 +108,16 @@
       this.axesCanvas.onmouseout = function(e) {
         return _this.drag = false;
       };
-      return this.axesCanvas.onmouseover = function(e) {
+      this.axesCanvas.onmouseover = function(e) {
         return _this.drag = false;
+      };
+      return this.axesCanvas.onmousewheel = function(e) {
+        var sensitivity;
+        e.preventDefault();
+        sensitivity = 0.001;
+        vec3.add(_this.translateBy, _this.translateBy, [0, 0, e.wheelDeltaY * sensitivity]);
+        _this.draw();
+        return _this.drawAxes3d();
       };
     };
 
