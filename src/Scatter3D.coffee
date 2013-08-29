@@ -12,7 +12,7 @@ Ruse::scatter3D = (data) ->
   
   # Add perspective when working in three dimensions
   mat4.perspective(@pMatrix, 45.0, 1.0, 0.1, 100.0)
-  @translateBy = [0.0, 0.0, -2.0]
+  @translateBy = @translateBy or [0.0, 0.0, -4.0]
   
   @gl.uniform1f(@uZComponent, 1.0)
   

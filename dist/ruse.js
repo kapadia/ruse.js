@@ -702,7 +702,7 @@
     }
     this.state = "scatter3D";
     mat4.perspective(this.pMatrix, 45.0, 1.0, 0.1, 100.0);
-    this.translateBy = [0.0, 0.0, -2.0];
+    this.translateBy = this.translateBy || [0.0, 0.0, -4.0];
     this.gl.uniform1f(this.uZComponent, 1.0);
     vertexSize = 3;
     nVertices = data.length;
