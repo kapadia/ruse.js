@@ -111,6 +111,9 @@ class Ruse
       @yOldOffset = y
       
       @draw()
+      @drawAxes3d()
+      
+      # NOTE: Code below is for panning in 2D frame.
       
       # deltaX = x - @xOldOffset
       # deltaY = y - @yOldOffset
@@ -196,7 +199,7 @@ class Ruse
     shaders = @constructor.Shaders
     @programs = {}
     @programs["ruse"] = @_createProgram(@gl, shaders.vertex, shaders.fragment)
-    @programs["axes"] = @_createProgramAxes(@gl, shaders.axesVertex, shaders.fragment)
+    @programs["axes"] = @_createProgram(@gl, shaders.axesVertex, shaders.axesFragment)
     
     # Get uniforms
     @uMinimum1 = @gl.getUniformLocation(@programs.ruse, "uMinimum1")
@@ -227,11 +230,14 @@ class Ruse
     
     # Create buffer for 3D axes
     @axesBuffer = @gl.createBuffer()
+    @axesBuffer2 = @gl.createBuffer()
     
     # Set parameters that store state
     @switch = 0
     @state = null
     @isAnimating = false
+    
+    @setupAxes3d()
     
   #
   # Draw functions
@@ -239,41 +245,74 @@ class Ruse
   
   draw: ->
     @gl.useProgram(@programs.ruse)
+    @gl.clear(@gl.COLOR_BUFFER_BIT | @gl.DEPTH_BUFFER_BIT)
     
+    # TODO: Might be good to move this outside of draw
+    #       so that matrices are not computed twice (plot and axes)
     mat4.identity(@mvMatrix)
     mat4.translate(@mvMatrix, @mvMatrix, @translateBy)
     mat4.multiply(@mvMatrix, @mvMatrix, @rotationMatrix)
     
     @_setMatrices(@programs.ruse)
-    @gl.clear(@gl.COLOR_BUFFER_BIT | @gl.DEPTH_BUFFER_BIT)
+    
+    # Bind buffer for draw
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer1)
+    @gl.vertexAttribPointer(@programs.ruse.aVertexPosition1, @dataBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
     @gl.drawArrays(@drawMode, 0, @dataBuffer1.numItems)
   
   removeAxes: ->
     @axesCanvas.width = @axesCanvas.width
   
   setupAxes3d: ->
+    lineWidth = 0.01
     vertices = new Float32Array([
-      -1.0, -0.1, 0.0,
-      1.0, -0.1, 0.0,
-      -1.0, -0.1, 0.0,
+      
+      # X axis
+      -1.0, -lineWidth, 0.0,
+      1.0, -lineWidth, 0.0,
+      -1.0, lineWidth, 0.0,
+      
+      -1.0, lineWidth, 0.0,
+      1.0, lineWidth, 0.0,
+      1.0, -lineWidth, 0.0
+      
+      # Y axis
+      -lineWidth, -1.0, 0.0,
+      -lineWidth, 1.0, 0.0,
+      lineWidth, -1.0, 0.0,
+      
+      lineWidth, -1.0, 0.0,
+      lineWidth, 1.0, 0.0,
+      -lineWidth, 1.0, 0.0,
+      
+      # Z axis
+      -lineWidth, 0.0, -1.0,
+      -lineWidth, 0.0, 1.0,
+      lineWidth, 0.0, -1.0,
+      
+      lineWidth, 0.0, -1.0,
+      lineWidth, 0.0, 1.0,
+      -lineWidth, 0.0, 1.0,
     ])
     @axesBuffer.itemSize = 3
-    @axesBuffer.numItems = 1
+    @axesBuffer.numItems = vertices.length / @axesBuffer.itemSize
     
     @gl.bindBuffer(@gl.ARRAY_BUFFER, @axesBuffer)
     @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
-    @gl.vertexAttribPointer(@programs.axes.aVertexPosition, @axesBuffer.itemSize, @gl.FLOAT, false, 0, 0)
+    @gl.vertexAttribPointer(@programs.axes.aVertexPosition1, @axesBuffer.itemSize, @gl.FLOAT, false, 0, 0)
   
   drawAxes3d: ->
     @gl.useProgram(@programs.axes)
-    console.log 'drawAxes3d'
+    
     mat4.identity(@mvMatrix)
     mat4.translate(@mvMatrix, @mvMatrix, @translateBy)
     mat4.multiply(@mvMatrix, @mvMatrix, @rotationMatrix)
-    
     @_setMatrices(@programs.axes)
-    @gl.clear(@gl.COLOR_BUFFER_BIT | @gl.DEPTH_BUFFER_BIT)
-    @dl.drawArrays(@gl.TRIANGLES, 0, @axesBuffer.numItems)
+    
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @axesBuffer)
+    @gl.vertexAttribPointer(@programs.axes.aVertexPosition1, @axesBuffer.itemSize, @gl.FLOAT, false, 0, 0)
+    
+    @gl.drawArrays(@gl.TRIANGLES, 0, @axesBuffer.numItems)
   
   drawAxes: ->
     # Clear the axes canvas
@@ -534,6 +573,7 @@ class Ruse
     # If code gets here, then something wrong with input data
     throw "Input data not recognized by Ruse."
   
+  # TODO: Logic on axes drawing can be better.
   animate: ->
     clearInterval(@intervalId) if @isAnimating
     
@@ -542,8 +582,10 @@ class Ruse
     @intervalId = setInterval( =>
       i += 1
       uTime = if @switch is 1 then i / 45 else 1 - i / 45
+      @gl.useProgram(@programs.ruse)
       @gl.uniform1f(@uTime, uTime)
       @draw()
+      @drawAxes3d() if @state is "scatter3D"
       if i is 45
         clearInterval(@intervalId)
         @isAnimating = false

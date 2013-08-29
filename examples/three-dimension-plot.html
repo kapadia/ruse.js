@@ -19,6 +19,7 @@
     // Pretend we already have a gl context running
     var el = document.querySelector("#ruse");
     var ruse = new astro.Ruse(el, 800, 400);
+    window.ruse = ruse;
     
     if (ruse.gl === null) {
       alert("Sadly this demo will be very boring since you don't have WebGL.");
@@ -76,7 +77,7 @@
       
       table.getRows(0, table.rows, function(rows) {
         
-        xAxisEl.onchange = function(e) {
+        xAxisEl.onchange = function() {
           var key1 = xAxisEl.value;
           var key2 = yAxisEl.value;
           var key3 = zAxisEl.value;
@@ -91,16 +92,22 @@
           });
           ruse.plot(data);
         }
-        yAxisEl.onchange = function(e) {
-          xAxisEl.onchange(e);
+        yAxisEl.onchange = function() {
+          xAxisEl.onchange();
         }
-        zAxisEl.onchange = function(e) {
-          xAxisEl.onchange(e);
+        zAxisEl.onchange = function() {
+          xAxisEl.onchange();
         }
         
         xAxisEl.removeAttribute('disabled');
         yAxisEl.removeAttribute('disabled');
         zAxisEl.removeAttribute('disabled');
+        
+        // Create first plot automatically
+        xAxisEl.value = "RACEN";
+        yAxisEl.value = "DECCEN";
+        zAxisEl.onchange();
+        
       });
     });
     

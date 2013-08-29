@@ -25,6 +25,8 @@ Ruse::getHistogram = (arr, min, max, bins) ->
 
 # Draw a histogram.
 Ruse::histogram = (data) ->
+  @gl.useProgram(@programs.ruse)
+  
   unless @state is "histogram"
     @switch = 0
     @hasData = false

@@ -3,6 +3,8 @@ Ruse = @astro.Ruse
 
 
 Ruse::scatter3D = (data) ->
+  @gl.useProgram(@programs.ruse)
+  
   unless @state is "scatter3D"
     @switch = 0
     @hasData = false

@@ -39,22 +39,33 @@ Shaders =
     "}"
   ].join("\n")
   
-  axesVertex: [
-    "attribute vec3 aVertexPosition;"
-    
-    "uniform mat4 uMVMatrix;"
-    "uniform mat4 uPMatrix;"
-    
-    "void main(void) {"
-      "gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);"
-    "}"
-  ].join("\n")
-  
   fragment: [
     "precision mediump float;"
     
     "void main(void) {"
       "gl_FragColor = vec4(0.0, 0.4431, 0.8980, 1.0);"
+    "}"
+  ].join("\n")
+  
+  axesVertex: [
+    "attribute vec3 aVertexPosition1;"
+    "attribute vec3 aVertexPosition2;"
+    
+    "uniform mat4 uMVMatrix;"
+    "uniform mat4 uPMatrix;"
+    
+    "void main(void) {"
+      "vec3 vertexPosition = aVertexPosition2;"
+      "gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition1, 1.0);"
+    "}"
+  ].join("\n")
+  
+  # TODO: Generate shaders with function
+  axesFragment: [
+    "precision mediump float;"
+    
+    "void main(void) {"
+      "gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);"
     "}"
   ].join("\n")
 
