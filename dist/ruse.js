@@ -533,13 +533,19 @@
   };
 
   Ruse.prototype.histogram = function(data) {
-    var clipspaceBinWidth, clipspaceLower, clipspaceSize, clipspaceUpper, countMax, countMin, datum, finalAttribute, finalBuffer, h, histMax, histMin, i, index, initialAttribute, initialBuffer, key, margin, max, min, nVertices, value, vertexSize, vertices, width, x, y, y0, _i, _len, _ref, _ref1, _ref2, _ref3;
+    var clipspaceBinWidth, clipspaceLower, clipspaceSize, clipspaceUpper, dataMax, dataMin, datum, h, histMax, histMin, i, index, initialVertices, key, margin, nVertices, value, vertexSize, vertices, width, x, y, y0, _i, _j, _len, _len1, _ref, _ref1;
     this.gl.useProgram(this.programs.ruse);
     if (this.state !== "histogram") {
       this["switch"] = 0;
       this.hasData = false;
     }
     this.state = "histogram";
+    this.gl.uniform1f(this.uZComponent, 0.0);
+    mat4.identity(this.pMatrix);
+    mat4.identity(this.mvMatrix);
+    mat4.identity(this.rotationMatrix);
+    this.translateBy = [0.0, 0.0, 0.0];
+    margin = this.getMargin();
     datum = data[0];
     if (this.isObject(datum)) {
       key = Object.keys(datum)[0];
@@ -549,25 +555,17 @@
         return d[key];
       });
     }
-    _ref = this.getExtent(data), min = _ref[0], max = _ref[1];
+    _ref = this.getExtent(data), dataMin = _ref[0], dataMax = _ref[1];
     if (!this.bins) {
       width = this.width - this.getMargin() * this.width;
       this.bins = Math.floor(width / this.targetBinWidth);
     }
-    h = this.getHistogram(data, min, max, this.bins);
-    _ref1 = this.getExtent(h), countMin = _ref1[0], countMax = _ref1[1];
-    this.extents = {
-      xmin: min,
-      xmax: max,
-      ymin: countMin,
-      ymax: countMax
-    };
-    margin = this.getMargin();
+    h = this.getHistogram(data, dataMin, dataMax, this.bins);
+    _ref1 = this.getExtent(h), histMin = _ref1[0], histMax = _ref1[1];
     clipspaceSize = 2.0 - 2 * margin;
     clipspaceLower = -1.0 + margin;
     clipspaceUpper = 1.0 - margin;
     clipspaceBinWidth = clipspaceSize / this.bins;
-    _ref2 = this.getExtent(h), histMin = _ref2[0], histMax = _ref2[1];
     vertexSize = 2;
     nVertices = 6 * this.bins;
     vertices = new Float32Array(vertexSize * nVertices);
@@ -590,18 +588,59 @@
       vertices[i + 11] = vertices[i + 3];
       x += clipspaceBinWidth;
     }
-    _ref3 = this.delegateBuffers(), initialBuffer = _ref3[0], initialAttribute = _ref3[1], finalBuffer = _ref3[2], finalAttribute = _ref3[3];
     if (!this.hasData) {
-      this.setInitialBuffer(initialBuffer, initialAttribute, vertexSize, nVertices, vertices);
+      initialVertices = new Float32Array(vertexSize * nVertices);
+      for (i = _j = 0, _len1 = vertices.length; _j < _len1; i = _j += 2) {
+        datum = vertices[i];
+        initialVertices[i] = datum[this.key1];
+        initialVertices[i + 1] = margin;
+      }
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, initialVertices, this.gl.STATIC_DRAW);
+      this.extents = {
+        xmin: dataMin,
+        xmax: dataMax,
+        ymin: histMin,
+        ymax: histMax
+      };
+      this.hasData = true;
     }
-    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, finalBuffer);
-    this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
-    finalBuffer.itemSize = vertexSize;
-    finalBuffer.numItems = nVertices;
-    this.gl.vertexAttribPointer(finalAttribute, finalBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
-    this.hasData = true;
-    this.drawMode = this.gl.TRIANGLES;
+    this.dataBuffer1.itemSize = vertexSize;
+    this.dataBuffer1.numItems = nVertices;
+    this.dataBuffer2.itemSize = vertexSize;
+    this.dataBuffer2.numItems = nVertices;
+    if (this["switch"] === 0) {
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
+      this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition1, this.dataBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
+      this.gl.uniform3f(this.uMinimum1, -1, 1, 0);
+      this.gl.uniform3f(this.uMaximum1, -1, 1, 1);
+      this.gl.uniform3f(this.uMinimum2, -1, 1, 0);
+      this.gl.uniform3f(this.uMaximum2, -1, 1, 1);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer2);
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
+      this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition2, this.dataBuffer2.itemSize, this.gl.FLOAT, false, 0, 0);
+      this["switch"] = 1;
+    } else {
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
+      this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
+      this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition1, this.dataBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
+      this.gl.uniform3f(this.uMinimum1, -1, 1, 0);
+      this.gl.uniform3f(this.uMaximum1, -1, 1, 1);
+      this.gl.uniform3f(this.uMinimum2, -1, 1, 0);
+      this.gl.uniform3f(this.uMaximum2, -1, 1, 1);
+      this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer2);
+      this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition2, this.dataBuffer2.itemSize, this.gl.FLOAT, false, 0, 0);
+      this["switch"] = 0;
+    }
+    this.extents = {
+      xmin: dataMin,
+      xmax: dataMax,
+      ymin: histMin,
+      ymax: histMax
+    };
     this.drawAxes();
+    this.drawMode = this.gl.TRIANGLES;
+    this.axesCanvas.onmousemove = null;
     return this.animate();
   };
 

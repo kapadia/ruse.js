@@ -41,7 +41,7 @@ Ruse::scatter2D = (data) ->
     #       run only once on the initial upload of data.  Subsequent plots will use
     #       another shader program that is created for transitions between buffers.  This is possible
     #       because programs can share buffers (i think ...).  This would provide a more memory efficient
-    #       solution, as only one typed array needs to be initialized on the client.s
+    #       solution, as only one typed array needs to be initialized by the client.
     initialVertices = new Float32Array(vertexSize * nVertices)
     for datum, index in data
       i = vertexSize * index

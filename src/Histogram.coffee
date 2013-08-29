@@ -32,6 +32,18 @@ Ruse::histogram = (data) ->
     @hasData = false
   @state = "histogram"
   
+  # TODO: Abstract some setup code since repeated across all plots
+  @gl.uniform1f(@uZComponent, 0.0)
+  
+  # Remove perspective if working in two dimensions
+  mat4.identity(@pMatrix)
+  mat4.identity(@mvMatrix)
+  mat4.identity(@rotationMatrix)
+  @translateBy = [0.0, 0.0, 0.0]
+  
+  # Compute margin that incorporates spaces needed for axes labels
+  margin = @getMargin()
+  
   # Data may be formated as an array of one dimensional objects
   # or an array of values
   datum = data[0]
@@ -52,7 +64,7 @@ Ruse::histogram = (data) ->
   #
   
   # Get the min and max
-  [min, max] = @getExtent(data)
+  [dataMin, dataMax] = @getExtent(data)
   
   # Determine optimal bin size unless specified
   unless @bins
@@ -64,25 +76,16 @@ Ruse::histogram = (data) ->
     @bins = Math.floor(width / @targetBinWidth)
   
   # Compute histogram
-  h = @getHistogram(data, min, max, @bins)
-  [countMin, countMax] = @getExtent(h)
-  
-  # Store computed extents for use when creating axes
-  @extents =
-    xmin: min
-    xmax: max
-    ymin: countMin
-    ymax: countMax
+  h = @getHistogram(data, dataMin, dataMax, @bins)
+  [histMin, histMax] = @getExtent(h)
   
   # Generate vertices describing histogram
-  margin = @getMargin()
   clipspaceSize = 2.0 - 2 * margin
   
   clipspaceLower = -1.0 + margin
   clipspaceUpper = 1.0 - margin
   
   clipspaceBinWidth = clipspaceSize / @bins
-  [histMin, histMax] = @getExtent(h)
   
   vertexSize = 2
   nVertices = 6 * @bins
@@ -110,18 +113,101 @@ Ruse::histogram = (data) ->
     
     x += clipspaceBinWidth
   
-  [initialBuffer, initialAttribute, finalBuffer, finalAttribute] = @delegateBuffers()
-  
   unless @hasData
-    @setInitialBuffer(initialBuffer, initialAttribute, vertexSize, nVertices, vertices)
+    initialVertices = new Float32Array(vertexSize * nVertices)
+    for datum, i in vertices by 2
+      initialVertices[i] = datum[@key1]
+      initialVertices[i + 1] = margin
+      
+    # Upload initial buffer array to GPU
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer1)
+    @gl.bufferData(@gl.ARRAY_BUFFER, initialVertices, @gl.STATIC_DRAW)
+    
+    # Store computed extents for use when creating axes
+    # This is stored here so that following code perceives it as previous values
+    @extents =
+      xmin: dataMin
+      xmax: dataMax
+      ymin: histMin
+      ymax: histMax
+    
+    @hasData = true
   
-  @gl.bindBuffer(@gl.ARRAY_BUFFER, finalBuffer)
-  @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
-  finalBuffer.itemSize = vertexSize
-  finalBuffer.numItems = nVertices
-  @gl.vertexAttribPointer(finalAttribute, finalBuffer.itemSize, @gl.FLOAT, false, 0, 0)
   
-  @hasData = true
-  @drawMode = @gl.TRIANGLES
+  @dataBuffer1.itemSize = vertexSize
+  @dataBuffer1.numItems = nVertices
+
+  @dataBuffer2.itemSize = vertexSize
+  @dataBuffer2.numItems = nVertices
+  
+  # Upload new data to appropriate buffer and delegate attribute pointers based according to switch
+  if @switch is 0
+    
+    #
+    # Data transitions from aVertexPosition1 to aVertexPosition2
+    #
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer1)
+    @gl.vertexAttribPointer(@programs.ruse.aVertexPosition1, @dataBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
+
+    # Bind previous extents to uMinimum1 and uMaximum2
+    @gl.uniform3f(@uMinimum1, -1, 1, 0)
+    @gl.uniform3f(@uMaximum1, -1, 1, 1)
+    
+    # Bind current extents to uMinimum2 and uMaximum2
+    @gl.uniform3f(@uMinimum2, -1, 1, 0)
+    @gl.uniform3f(@uMaximum2, -1, 1, 1)
+    
+    # # Bind previous extents to uMinimum1 and uMaximum2
+    # @gl.uniform3f(@uMinimum1, @extents.xmin, @extents.ymin, 0)
+    # @gl.uniform3f(@uMaximum1, @extents.xmax, @extents.ymax, 1)
+    # 
+    # # Bind current extents to uMinimum2 and uMaximum2
+    # @gl.uniform3f(@uMinimum2, dataMin, histMin, 0)
+    # @gl.uniform3f(@uMaximum2, dataMax, histMax, 1)
+    
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer2)
+    @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
+    @gl.vertexAttribPointer(@programs.ruse.aVertexPosition2, @dataBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
+    
+    @switch = 1
+  else
+    
+    #
+    # Data transitions from aVertexPosition2 to aVertexPosition1
+    #
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer1)
+    @gl.bufferData(@gl.ARRAY_BUFFER, vertices, @gl.STATIC_DRAW)
+    @gl.vertexAttribPointer(@programs.ruse.aVertexPosition1, @dataBuffer1.itemSize, @gl.FLOAT, false, 0, 0)
+    
+    # Bind previous extents to uMinimum1 and uMaximum2
+    @gl.uniform3f(@uMinimum1, -1, 1, 0)
+    @gl.uniform3f(@uMaximum1, -1, 1, 1)
+    
+    # Bind current extents to uMinimum2 and uMaximum2
+    @gl.uniform3f(@uMinimum2, -1, 1, 0)
+    @gl.uniform3f(@uMaximum2, -1, 1, 1)
+    
+    # # Bind current extents to uMinimum1 and uMaximum2
+    # @gl.uniform3f(@uMinimum1, dataMin, histMin, 0)
+    # @gl.uniform3f(@uMaximum1, dataMax, histMax, 1)
+    # 
+    # # Bind previous extents to uMinimum2 and uMaximum2
+    # @gl.uniform3f(@uMinimum2, @extents.xmin, @extents.ymin, 0)
+    # @gl.uniform3f(@uMaximum2, @extents.xmax, @extents.ymax, 1)
+    
+    @gl.bindBuffer(@gl.ARRAY_BUFFER, @dataBuffer2)
+    @gl.vertexAttribPointer(@programs.ruse.aVertexPosition2, @dataBuffer2.itemSize, @gl.FLOAT, false, 0, 0)
+    
+    @switch = 0
+  
+  # Store computed extents for use when creating axes
+  @extents =
+    xmin: dataMin
+    xmax: dataMax
+    ymin: histMin
+    ymax: histMax
+  
   @drawAxes()
+  @drawMode = @gl.TRIANGLES
+  @axesCanvas.onmousemove = null
   @animate()
