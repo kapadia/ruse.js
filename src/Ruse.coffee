@@ -268,31 +268,55 @@ class Ruse
     vertices = new Float32Array([
       
       # X axis
-      -1.0, -lineWidth, 0.0,
-      1.0, -lineWidth, 0.0,
-      -1.0, lineWidth, 0.0,
+      -1.0, -lineWidth, -lineWidth,
+       1.0, -lineWidth, -lineWidth,
+      -1.0,  lineWidth, -lineWidth,
       
-      -1.0, lineWidth, 0.0,
-      1.0, lineWidth, 0.0,
-      1.0, -lineWidth, 0.0
+      -1.0, -lineWidth, lineWidth,
+       1.0, -lineWidth, lineWidth,
+      -1.0,  lineWidth, lineWidth,
+      
+      -1.0,  lineWidth, -lineWidth,
+       1.0,  lineWidth, -lineWidth,
+       1.0, -lineWidth, -lineWidth,
+       
+      -1.0,  lineWidth, lineWidth,
+       1.0,  lineWidth, lineWidth,
+       1.0, -lineWidth, lineWidth,
       
       # Y axis
-      -lineWidth, -1.0, 0.0,
-      -lineWidth, 1.0, 0.0,
-      lineWidth, -1.0, 0.0,
+      -lineWidth, -1.0, -lineWidth,
+      -lineWidth, 1.0, -lineWidth,
+      lineWidth, -1.0, -lineWidth,
       
-      lineWidth, -1.0, 0.0,
-      lineWidth, 1.0, 0.0,
-      -lineWidth, 1.0, 0.0,
+      -lineWidth, -1.0, lineWidth,
+      -lineWidth,  1.0, lineWidth,
+       lineWidth, -1.0, lineWidth,
+      
+      lineWidth, -1.0, -lineWidth,
+      lineWidth, 1.0, -lineWidth,
+      -lineWidth, 1.0, -lineWidth,
+      
+       lineWidth, -1.0, lineWidth,
+       lineWidth,  1.0, lineWidth,
+      -lineWidth,  1.0, lineWidth,
       
       # Z axis
-      -lineWidth, 0.0, -1.0,
-      -lineWidth, 0.0, 1.0,
-      lineWidth, 0.0, -1.0,
+      -lineWidth, -lineWidth, -1.0,
+      -lineWidth, -lineWidth,  1.0,
+       lineWidth, -lineWidth, -1.0,
+       
+      -lineWidth, lineWidth, -1.0,
+      -lineWidth, lineWidth,  1.0,
+       lineWidth, lineWidth, -1.0,
       
-      lineWidth, 0.0, -1.0,
-      lineWidth, 0.0, 1.0,
-      -lineWidth, 0.0, 1.0,
+       lineWidth, -lineWidth, -1.0,
+       lineWidth, -lineWidth,  1.0,
+      -lineWidth, -lineWidth,  1.0,
+      
+       lineWidth, lineWidth, -1.0,
+       lineWidth, lineWidth,  1.0,
+      -lineWidth, lineWidth,  1.0,
     ])
     @axesBuffer.itemSize = 3
     @axesBuffer.numItems = vertices.length / @axesBuffer.itemSize
@@ -477,6 +501,7 @@ class Ruse
       
     return steps
   
+  # TODO: Benchmark. Not sure if this is faster than N calls to getExtent.
   getExtentFromObjects: (data) ->
     
     keys = Object.keys(data[0])

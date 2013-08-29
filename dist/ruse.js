@@ -206,7 +206,7 @@
     Ruse.prototype.setupAxes3d = function() {
       var lineWidth, vertices;
       lineWidth = 0.01;
-      vertices = new Float32Array([-1.0, -lineWidth, 0.0, 1.0, -lineWidth, 0.0, -1.0, lineWidth, 0.0, -1.0, lineWidth, 0.0, 1.0, lineWidth, 0.0, 1.0, -lineWidth, 0.0, -lineWidth, -1.0, 0.0, -lineWidth, 1.0, 0.0, lineWidth, -1.0, 0.0, lineWidth, -1.0, 0.0, lineWidth, 1.0, 0.0, -lineWidth, 1.0, 0.0, -lineWidth, 0.0, -1.0, -lineWidth, 0.0, 1.0, lineWidth, 0.0, -1.0, lineWidth, 0.0, -1.0, lineWidth, 0.0, 1.0, -lineWidth, 0.0, 1.0]);
+      vertices = new Float32Array([-1.0, -lineWidth, -lineWidth, 1.0, -lineWidth, -lineWidth, -1.0, lineWidth, -lineWidth, -1.0, -lineWidth, lineWidth, 1.0, -lineWidth, lineWidth, -1.0, lineWidth, lineWidth, -1.0, lineWidth, -lineWidth, 1.0, lineWidth, -lineWidth, 1.0, -lineWidth, -lineWidth, -1.0, lineWidth, lineWidth, 1.0, lineWidth, lineWidth, 1.0, -lineWidth, lineWidth, -lineWidth, -1.0, -lineWidth, -lineWidth, 1.0, -lineWidth, lineWidth, -1.0, -lineWidth, -lineWidth, -1.0, lineWidth, -lineWidth, 1.0, lineWidth, lineWidth, -1.0, lineWidth, lineWidth, -1.0, -lineWidth, lineWidth, 1.0, -lineWidth, -lineWidth, 1.0, -lineWidth, lineWidth, -1.0, lineWidth, lineWidth, 1.0, lineWidth, -lineWidth, 1.0, lineWidth, -lineWidth, -lineWidth, -1.0, -lineWidth, -lineWidth, 1.0, lineWidth, -lineWidth, -1.0, -lineWidth, lineWidth, -1.0, -lineWidth, lineWidth, 1.0, lineWidth, lineWidth, -1.0, lineWidth, -lineWidth, -1.0, lineWidth, -lineWidth, 1.0, -lineWidth, -lineWidth, 1.0, lineWidth, lineWidth, -1.0, lineWidth, lineWidth, 1.0, -lineWidth, lineWidth, 1.0]);
       this.axesBuffer.itemSize = 3;
       this.axesBuffer.numItems = vertices.length / this.axesBuffer.itemSize;
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.axesBuffer);
@@ -694,7 +694,7 @@
     }
     this.state = "scatter3D";
     mat4.perspective(this.pMatrix, 45.0, 1.0, 0.1, 100.0);
-    this.translateBy = [0.0, 0.0, -4.0];
+    this.translateBy = [0.0, 0.0, -2.0];
     this.gl.uniform1f(this.uZComponent, 1.0);
     vertexSize = 3;
     nVertices = data.length;
