@@ -1,11 +1,6 @@
 
 Ruse = @astro.Ruse
 
-# Font size is units of pixels
-Ruse::setFontSize = (value) ->
-  @fontSize = value
-  @drawAxes()
-
 # Compute a histogram in one pass
 Ruse::getHistogram = (arr, min, max, bins) ->
   range = max - min

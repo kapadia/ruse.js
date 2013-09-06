@@ -17,18 +17,52 @@
     
     // Initialize a ruse (aka plot) using an existing gl context
     var ruse = new astro.Ruse(el, 500, 300);
-    var key = "RACEN";
+    var path = "data/plates-dr9.fits";
+    // var path = "data/dr7qso.fit";
     
-    new astro.FITS('data/plates-dr9.fits', function(f) {
-      var table = f.getDataUnit();
+    new astro.FITS(path, function(f) {
+      var header = f.getHeader(1);
+      var table = f.getDataUnit(1);
+      
+      console.log(table.rows);
+      
+      var axisEl = document.querySelector('select[class="axis"]');
+      var cols = table.columns;
+      
+      // Get numerical columns
+      columns = [];
+      for (var i = 1; i < cols.length + 1; i++) {
+        form = "TFORM" + i;
+        type = "TTYPE" + i;
+        match = header.get(form).match(/(\d*)([BIJKED])/)
+        if (typeof match !== "undefined" && match !== null) {
+          columns.push(header.get(type));
+        }
+      }
+      
+      for (var i = 0; i < columns.length; i++) {
+        var option = document.createElement('option');
+        option.textContent = columns[i];
+        axisEl.appendChild(option);
+      }
+      
       table.getRows(0, table.rows, function(rows) {
-        row = rows.map(function(d) {
-          datum = {};
-          datum[key] = d[key];
-          return datum;
-        });
         
-        ruse.plot(row);
+        axisEl.onchange = function() {
+          var key = axisEl.value;
+          
+          // data = rows.map(function(d) {
+          //   datum = {};
+          //   datum[key] = d[key];
+          //   return datum;
+          // });
+          data = rows.map(function(d) { return d[key]; });
+          ruse.plot(data);
+        }
+        axisEl.removeAttribute('disabled');
+        axisEl.value = "RA";
+        axisEl.onchange();
+        
       });
     });
     
@@ -40,6 +74,8 @@
 <body onload='main()'>
   <div class='content'>
     <h3>One Dimension Plot</h3>
+    <select class='axis' disabled></select>
+    
     <div id="ruse"></div>
   </div>
 </body>

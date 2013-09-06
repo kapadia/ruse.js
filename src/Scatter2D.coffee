@@ -123,3 +123,11 @@ Ruse::scatter2D = (data) ->
   @drawMode = @gl.POINTS
   @axesCanvas.onmousemove = null
   @animate()
+  
+  # # TESTING: Mouse interactions
+  # @axesCanvas.onmousemove = (e) =>
+  #   horizontalMargin = @width * 0.5 * margin
+  #   verticalMargin = @height * 0.5 * margin
+  #   
+  #   console.log e.layerX - horizontalMargin, @height - e.layerY - verticalMargin
+  

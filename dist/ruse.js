@@ -512,11 +512,6 @@
 
   Ruse = this.astro.Ruse;
 
-  Ruse.prototype.setFontSize = function(value) {
-    this.fontSize = value;
-    return this.drawAxes();
-  };
-
   Ruse.prototype.getHistogram = function(arr, min, max, bins) {
     var dx, h, i, index, range, value;
     range = max - min;
@@ -736,7 +731,7 @@
       this.hasData = false;
     }
     this.state = "scatter3D";
-    mat4.perspective(this.pMatrix, 45.0, 1.0, 0.1, 100.0);
+    mat4.perspective(this.pMatrix, 45.0, this.canvas.width / this.canvas.height, 0.1, 100.0);
     this.translateBy = this.translateBy || [0.0, 0.0, -4.0];
     this.gl.uniform1f(this.uZComponent, 1.0);
     vertexSize = 3;

@@ -2,11 +2,36 @@
 <head>
   <title>Three Dimensional Scatter Plot Example</title>
   <link rel="stylesheet" href="astrojs.css" type="text/css" charset="utf-8">
-  <!-- <style>
+  <style>
   canvas {
     border: 1px solid red;
   }
-  </style> -->
+  
+  div.outer {
+    overflow: hidden;
+    -webkit-transform-style: preserve-3d;
+    width: 800px;
+    height: 400px;
+    position: absolute;
+    -webkit-perspective: 403.3482528943532px;
+    pointer-events: none;
+  }
+  
+  div.inner {
+    -webkit-transform-style: preserve-3d;
+    width: 800px;
+    height: 400px;
+    -webkit-transform: translate3d(0px, 0px, 403px) matrix3d(1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, 0, 0, -1500, 1) translate3d(20px, 5px, 0px);
+  }
+  
+  p.label {
+    font-size: 140px;
+    position: absolute;
+    -webkit-transform-style: preserve-3d;
+/*    -webkit-transform: translate3d(-50%, -50%, 0px) matrix3d(1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1, 0, -1190, 810, 0, 1);*/
+  }
+  
+  </style>
   <script type="text/javascript" src="lib/gl-matrix.js"></script>
   <script type="text/javascript" src="../dist/ruse.js"></script>
   
@@ -14,11 +39,29 @@
   
   <script type="text/javascript">
   
+  function appendLabels(el) {
+    return;
+    divOuter = document.createElement("div");
+    divOuter.className = "axes outer";
+    
+    divInner = document.createElement("div");
+    divInner.className = "axes inner"
+    
+    pEl = document.createElement("p");
+    pEl.textContent = "BLAH";
+    pEl.className = "label";
+    
+    divInner.appendChild(pEl);
+    divOuter.appendChild(divInner);
+    el.appendChild(divOuter);
+  }
+  
   function main() {
     
     // Pretend we already have a gl context running
     var el = document.querySelector("#ruse");
     var ruse = new astro.Ruse(el, 800, 400);
+    appendLabels(el);
     window.ruse = ruse;
     
     if (ruse.gl === null) {

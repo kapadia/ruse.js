@@ -2,11 +2,12 @@
 <head>
   <title>Two Dimensional Scatter Plot Example</title>
   <link rel="stylesheet" href="astrojs.css" type="text/css" charset="utf-8">
-  <!-- <style>
+  <style>
   canvas {
     border: 1px solid red;
   }
-  </style> -->
+  </style>
+  
   <script type="text/javascript" src="lib/gl-matrix.js"></script>
   <script type="text/javascript" src="../dist/ruse.js"></script>
   
@@ -91,6 +92,9 @@
         
         xAxisEl.removeAttribute('disabled');
         yAxisEl.removeAttribute('disabled');
+        xAxisEl.value = "RACEN";
+        yAxisEl.value = "DECCEN";
+        xAxisEl.onchange();
         
         window.ruse = ruse;
       });
