@@ -217,21 +217,23 @@ class Ruse
     @programs["axes"] = @_createProgram(@gl, shaders.axesVertex, shaders.axesFragment)
     
     # Get uniforms
-    @uMinimum1 = @gl.getUniformLocation(@programs.ruse, "uMinimum1")
-    @uMaximum1 = @gl.getUniformLocation(@programs.ruse, "uMaximum1")
-    @uMinimum2 = @gl.getUniformLocation(@programs.ruse, "uMinimum2")
-    @uMaximum2 = @gl.getUniformLocation(@programs.ruse, "uMaximum2")
-    @uZComponent = @gl.getUniformLocation(@programs.ruse, "uZComponent")
-    @uTime = @gl.getUniformLocation(@programs.ruse, "uTime")
-    @uMargin = @gl.getUniformLocation(@programs.ruse, "uMargin")
+    @uColor       = @gl.getUniformLocation(@programs.ruse, "uColor")
+    @uMinimum1    = @gl.getUniformLocation(@programs.ruse, "uMinimum1")
+    @uMaximum1    = @gl.getUniformLocation(@programs.ruse, "uMaximum1")
+    @uMinimum2    = @gl.getUniformLocation(@programs.ruse, "uMinimum2")
+    @uMaximum2    = @gl.getUniformLocation(@programs.ruse, "uMaximum2")
+    @uZComponent  = @gl.getUniformLocation(@programs.ruse, "uZComponent")
+    @uTime        = @gl.getUniformLocation(@programs.ruse, "uTime")
+    @uMargin      = @gl.getUniformLocation(@programs.ruse, "uMargin")
     
     # Set initial values for uniforms
     @gl.useProgram(@programs.ruse)
+    @gl.uniform4f(@uColor, 0.0, 0.4431, 0.8980, 1.0)
     @gl.uniform1f( @uMargin, @getMargin() )
     
     # Set up camera parameters
-    @pMatrix = mat4.create()
-    @mvMatrix = mat4.create()
+    @pMatrix        = mat4.create()
+    @mvMatrix       = mat4.create()
     @rotationMatrix = mat4.create()
     @_setMatrices(@programs.ruse)
     
