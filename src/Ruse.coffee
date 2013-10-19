@@ -144,7 +144,6 @@ class Ruse
     @axesCanvas.onmouseover = (e) =>
       @drag = false
     
-    # TODO: Does this work in Firefox?!?
     # TODO: Adjust axis lineWidth based on zoom
     @axesCanvas.onmousewheel = (e) =>
       e.preventDefault()

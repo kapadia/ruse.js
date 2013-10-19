@@ -121,7 +121,12 @@ Ruse::scatter2D = (data) ->
   
   @drawAxes()
   @drawMode = @gl.POINTS
+  
+  # TODO: Create function to setup and tear down plot-based mouse interaction
   @axesCanvas.onmousemove = null
+  @axesCanvas.onwheel = null
+  @axesCanvas.onmousewheel = null
+  
   @animate()
   
   # # TESTING: Mouse interactions

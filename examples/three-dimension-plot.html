@@ -60,11 +60,11 @@
     
     // Pretend we already have a gl context running
     var el = document.querySelector("#ruse");
-    var ruse = new ruse(el, 800, 400);
+    var r = new ruse(el, 800, 400);
     appendLabels(el);
-    window.ruse = ruse;
+    window.r = r;
     
-    if (ruse.gl === null) {
+    if (r.gl === null) {
       alert("Sadly this demo will be very boring since you don't have WebGL.");
       return;
     }
@@ -135,7 +135,7 @@
             
             return datum;
           });
-          ruse.plot(data);
+          r.plot(data);
         }
         yAxisEl.onchange = function() {
           xAxisEl.onchange();

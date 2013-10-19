@@ -717,6 +717,8 @@
     this.drawAxes();
     this.drawMode = this.gl.POINTS;
     this.axesCanvas.onmousemove = null;
+    this.axesCanvas.onwheel = null;
+    this.axesCanvas.onmousewheel = null;
     return this.animate();
   };
 
