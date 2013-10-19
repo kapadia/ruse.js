@@ -25,7 +25,7 @@
     
     // Initialize a ruse (aka plot) using an existing gl context
     // var ruse = new astro.Ruse(canvas, 500, 300);
-    var ruse = new astro.Ruse(gl);
+    var r = new ruse(gl);
     
     // var path = "data/dr7qso.fit";
     // var path = "data/specObj-dr10_ra_dec.fits";
@@ -84,7 +84,7 @@
             datum[key2] = d[key2];
             return datum;
           });
-          ruse.plot(data);
+          r.plot(data);
         }
         yAxisEl.onchange = function(e) {
           xAxisEl.onchange(e);
@@ -96,7 +96,7 @@
         yAxisEl.value = "DECCEN";
         xAxisEl.onchange();
         
-        window.ruse = ruse;
+        window.r = ruse;
       });
     });
     

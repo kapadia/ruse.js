@@ -60,7 +60,7 @@
     
     // Pretend we already have a gl context running
     var el = document.querySelector("#ruse");
-    var ruse = new astro.Ruse(el, 800, 400);
+    var ruse = new ruse(el, 800, 400);
     appendLabels(el);
     window.ruse = ruse;
     
@@ -76,15 +76,17 @@
     // var key2 = "CY";
     // var key3 = "CZ";
     
-    var path = "data/plates-dr9.fits";
-    // var path = "data/dr7qso.fit";
+    // var path = "data/segue-best.fits";
+    // var path = "data/plates-dr10.fits";
+    // var path = "data/SpecObj.fits";
+    var path = "data/dr7qso.fit";
     // var path = "data/big.fits";
     
     new astro.FITS(path, function(f) {
       var table = f.getDataUnit(1);
       var header = f.getHeader(1);
       
-      console.log(table.rows);
+      console.log(table.columns);
       
       // Set up drop down menus
       var xAxisEl = document.querySelector('select[class="x-axis"]');

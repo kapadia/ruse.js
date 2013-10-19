@@ -1,5 +1,5 @@
 
-Ruse = @astro.Ruse
+Ruse = @ruse
 
 Ruse::scatter2D = (data) ->
   @gl.useProgram(@programs.ruse)

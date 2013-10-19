@@ -154,6 +154,8 @@ class Ruse
       
       @draw()
       @drawAxes3d()
+    
+    @axesCanvas.onwheel = @axesCanvas.onmousewheel
   
   constructor: (arg, width, height) ->
     
@@ -631,6 +633,5 @@ class Ruse
     , 1000 / 60)
 
 
-@astro = {} unless @astro?
-@astro.Ruse = Ruse
-@astro.Ruse.version = '0.1.0'
+@ruse = Ruse unless @ruse?
+@ruse.version = '0.1.0'

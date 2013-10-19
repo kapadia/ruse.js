@@ -111,7 +111,7 @@
       this.axesCanvas.onmouseover = function(e) {
         return _this.drag = false;
       };
-      return this.axesCanvas.onmousewheel = function(e) {
+      this.axesCanvas.onmousewheel = function(e) {
         var sensitivity;
         e.preventDefault();
         sensitivity = 0.001;
@@ -119,6 +119,7 @@
         _this.draw();
         return _this.drawAxes3d();
       };
+      return this.axesCanvas.onwheel = this.axesCanvas.onmousewheel;
     };
 
     function Ruse(arg, width, height) {
@@ -502,15 +503,13 @@
 
   })();
 
-  if (this.astro == null) {
-    this.astro = {};
+  if (this.ruse == null) {
+    this.ruse = Ruse;
   }
 
-  this.astro.Ruse = Ruse;
+  this.ruse.version = '0.1.0';
 
-  this.astro.Ruse.version = '0.1.0';
-
-  Ruse = this.astro.Ruse;
+  Ruse = this.ruse;
 
   Ruse.prototype.getHistogram = function(arr, min, max, bins) {
     var dx, h, i, index, range, value;
@@ -635,7 +634,7 @@
     return this.animate();
   };
 
-  Ruse = this.astro.Ruse;
+  Ruse = this.ruse;
 
   Ruse.prototype.scatter2D = function(data) {
     var datum, i, index, initialVertices, margin, max1, max2, min1, min2, nVertices, range1, range2, vertexSize, vertices, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3;
@@ -721,7 +720,7 @@
     return this.animate();
   };
 
-  Ruse = this.astro.Ruse;
+  Ruse = this.ruse;
 
   Ruse.prototype.scatter3D = function(data) {
     var datum, i, index, initialVertices, max1, max2, max3, min1, min2, min3, nVertices, range1, range2, range3, vertexSize, vertices, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3;
@@ -818,6 +817,6 @@
     axesFragment: ["precision mediump float;", "void main(void) {", "gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);", "}"].join("\n")
   };
 
-  this.astro.Ruse.Shaders = Shaders;
+  this.ruse.Shaders = Shaders;
 
 }).call(this);

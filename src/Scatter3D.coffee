@@ -1,5 +1,5 @@
 
-Ruse = @astro.Ruse
+Ruse = @ruse
 
 
 Ruse::scatter3D = (data) ->

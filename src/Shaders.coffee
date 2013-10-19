@@ -70,4 +70,4 @@ Shaders =
   ].join("\n")
 
 
-@astro.Ruse.Shaders = Shaders
+@ruse.Shaders = Shaders

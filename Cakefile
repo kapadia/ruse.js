@@ -7,7 +7,7 @@ task 'build', 'Build dist/ from src/', ->
   pkg = require('./package.json')
   
   # Specify the name of the library
-  output = "dist/#{pkg['name']}.js"
+  output = "dist/#{pkg['name']}"
   
   # Check that developer has specified a dependency order
   unless pkg['_dependencyOrder']?

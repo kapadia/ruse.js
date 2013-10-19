@@ -1,5 +1,5 @@
 
-Ruse = @astro.Ruse
+Ruse = @ruse
 
 # Compute a histogram in one pass
 Ruse::getHistogram = (arr, min, max, bins) ->
