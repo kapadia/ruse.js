@@ -281,59 +281,111 @@ class Ruse
     @axesCanvas.width = @axesCanvas.width
   
   setupAxes3d: ->
-    lineWidth = 0.01
+    lineWidth = 1.0
+    lineWidthX = lineWidth / @width
+    lineWidthY = lineWidth / @height
+    
     vertices = new Float32Array([
       
       # X axis
-      -1.0, -lineWidth, -lineWidth,
-       1.0, -lineWidth, -lineWidth,
-      -1.0,  lineWidth, -lineWidth,
+      -1.0, -lineWidthY, -lineWidthX,
+       1.0, -lineWidthY, -lineWidthX,
+      -1.0,  lineWidthY, -lineWidthX,
       
-      -1.0, -lineWidth, lineWidth,
-       1.0, -lineWidth, lineWidth,
-      -1.0,  lineWidth, lineWidth,
+      -1.0, -lineWidthY, lineWidthX,
+       1.0, -lineWidthY, lineWidthX,
+      -1.0,  lineWidthY, lineWidthX,
       
-      -1.0,  lineWidth, -lineWidth,
-       1.0,  lineWidth, -lineWidth,
-       1.0, -lineWidth, -lineWidth,
+      -1.0,  lineWidthY, -lineWidthX,
+       1.0,  lineWidthY, -lineWidthX,
+       1.0, -lineWidthY, -lineWidthX,
        
-      -1.0,  lineWidth, lineWidth,
-       1.0,  lineWidth, lineWidth,
-       1.0, -lineWidth, lineWidth,
+      -1.0,  lineWidthY, lineWidthX,
+       1.0,  lineWidthY, lineWidthX,
+       1.0, -lineWidthY, lineWidthX,
+       
+      -1.0, lineWidthY, -lineWidthX,
+      -1.0, lineWidthY,  lineWidthX,
+       1.0, lineWidthY,  lineWidthX,
+        
+       1.0, lineWidthY,  lineWidthX,
+       1.0, lineWidthY, -lineWidthX,
+      -1.0, lineWidthY, -lineWidthX,
+      
+      -1.0, -lineWidthY, -lineWidthX,
+      -1.0, -lineWidthY,  lineWidthX,
+       1.0, -lineWidthY,  lineWidthX,
+        
+       1.0, -lineWidthY,  lineWidthX,
+       1.0, -lineWidthY, -lineWidthX,
+      -1.0, -lineWidthY, -lineWidthX,
       
       # Y axis
-      -lineWidth, -1.0, -lineWidth,
-      -lineWidth, 1.0, -lineWidth,
-      lineWidth, -1.0, -lineWidth,
+      -lineWidthX, -1.0, -lineWidthX,
+      -lineWidthX, 1.0, -lineWidthX,
+      lineWidthX, -1.0, -lineWidthX,
       
-      -lineWidth, -1.0, lineWidth,
-      -lineWidth,  1.0, lineWidth,
-       lineWidth, -1.0, lineWidth,
+      -lineWidthX, -1.0, lineWidthX,
+      -lineWidthX,  1.0, lineWidthX,
+       lineWidthX, -1.0, lineWidthX,
       
-      lineWidth, -1.0, -lineWidth,
-      lineWidth, 1.0, -lineWidth,
-      -lineWidth, 1.0, -lineWidth,
+      lineWidthX, -1.0, -lineWidthX,
+      lineWidthX, 1.0, -lineWidthX,
+      -lineWidthX, 1.0, -lineWidthX,
       
-       lineWidth, -1.0, lineWidth,
-       lineWidth,  1.0, lineWidth,
-      -lineWidth,  1.0, lineWidth,
+       lineWidthX, -1.0, lineWidthX,
+       lineWidthX,  1.0, lineWidthX,
+      -lineWidthX,  1.0, lineWidthX,
+      
+      -lineWidthX, -1.0, -lineWidthX,
+      -lineWidthX, -1.0,  lineWidthX,
+      -lineWidthX,  1.0,  lineWidthX,
+      
+      -lineWidthX,  1.0, lineWidthX,
+      -lineWidthX,  1.0, -lineWidthX,
+      -lineWidthX, -1.0, -lineWidthX,
+      
+      lineWidthX, -1.0, -lineWidthX,
+      lineWidthX, -1.0,  lineWidthX,
+      lineWidthX,  1.0,  lineWidthX,
+      
+      lineWidthX,  1.0, lineWidthX,
+      lineWidthX,  1.0, -lineWidthX,
+      lineWidthX, -1.0, -lineWidthX,
       
       # Z axis
-      -lineWidth, -lineWidth, -1.0,
-      -lineWidth, -lineWidth,  1.0,
-       lineWidth, -lineWidth, -1.0,
-       
-      -lineWidth, lineWidth, -1.0,
-      -lineWidth, lineWidth,  1.0,
-       lineWidth, lineWidth, -1.0,
+      -lineWidthX, -lineWidthY, -1.0,
+      -lineWidthX, -lineWidthY,  1.0,
+       lineWidthX, -lineWidthY, -1.0,
       
-       lineWidth, -lineWidth, -1.0,
-       lineWidth, -lineWidth,  1.0,
-      -lineWidth, -lineWidth,  1.0,
+      -lineWidthX, lineWidthY, -1.0,
+      -lineWidthX, lineWidthY,  1.0,
+       lineWidthX, lineWidthY, -1.0,
       
-       lineWidth, lineWidth, -1.0,
-       lineWidth, lineWidth,  1.0,
-      -lineWidth, lineWidth,  1.0,
+       lineWidthX, -lineWidthY, -1.0,
+       lineWidthX, -lineWidthY,  1.0,
+      -lineWidthX, -lineWidthY,  1.0,
+      
+       lineWidthX, lineWidthY, -1.0,
+       lineWidthX, lineWidthY,  1.0,
+      -lineWidthX, lineWidthY,  1.0,
+      
+      -lineWidthX, -lineWidthY, -1.0,
+      -lineWidthX,  lineWidthY, -1.0,
+      -lineWidthX,  lineWidthY,  1.0,
+      
+      -lineWidthX,  lineWidthY,  1.0,
+      -lineWidthX, -lineWidthY,  1.0,
+      -lineWidthX, -lineWidthY, -1.0,
+      
+      lineWidthX, -lineWidthY, -1.0,
+      lineWidthX,  lineWidthY, -1.0,
+      lineWidthX,  lineWidthY,  1.0,
+      
+      lineWidthX,  lineWidthY,  1.0,
+      lineWidthX, -lineWidthY,  1.0,
+      lineWidthX, -lineWidthY, -1.0,
+      
     ])
     @axesBuffer.itemSize = 3
     @axesBuffer.numItems = vertices.length / @axesBuffer.itemSize
