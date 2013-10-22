@@ -4,7 +4,7 @@
   <link rel="stylesheet" href="astrojs.css" type="text/css" charset="utf-8">
   
   <script type="text/javascript" src="lib/gl-matrix.js"></script>
-  <script type="text/javascript" src="../dist/ruse.js"></script>
+  <script type="text/javascript" src="../../ruse.js"></script>
   
   <script type="text/javascript" src="lib/fits.js"></script>
   
@@ -16,7 +16,7 @@
     var el = document.querySelector("#ruse");
     
     // Initialize a ruse (aka plot) using an existing gl context
-    var ruse = new ruse(el, 500, 300);
+    var r = new ruse(el, 500, 300);
     var path = "data/plates-dr9.fits";
     // var path = "data/dr7qso.fit";
     
@@ -57,7 +57,7 @@
           //   return datum;
           // });
           data = rows.map(function(d) { return d[key]; });
-          ruse.plot(data);
+          r.plot(data);
         }
         axisEl.removeAttribute('disabled');
         axisEl.value = "RA";

@@ -1,6 +1,6 @@
-
+ruse = (function(){
 function ruse(arg, width, height) {
-  
+  var s, shaders;
   this.margin = 0.02;
   this.fontSize = 10;
   this.tickFontSize = 9;
@@ -16,8 +16,7 @@ function ruse(arg, width, height) {
   this.drawMode = null;
   this.extents = null;
   this.hasData = false;
-  
-  var s = arg.constructor.toString();
+  s = arg.constructor.toString();
   if (s.indexOf('WebGLRenderingContext') > -1 || s.indexOf('rawgl') > -1) {
     this.gl = arg;
     this.canvas = arg.canvas;
@@ -45,48 +44,41 @@ function ruse(arg, width, height) {
   this.axesCanvas.style.position = 'absolute';
   this.gl.canvas.parentElement.appendChild(this.axesCanvas);
   
-  var shaders = ruse.shaders;
+  console.log(ruse.shaders);
+  shaders = this.constructor.shaders;
   this.programs = {};
   this.programs["ruse"] = this._createProgram(this.gl, shaders.vertex, shaders.fragment);
   this.programs["axes"] = this._createProgram(this.gl, shaders.axesVertex, shaders.axesFragment);
-  
-  this.uColor       = this.gl.getUniformLocation(this.programs.ruse, "uColor");
-  this.uMinimum1    = this.gl.getUniformLocation(this.programs.ruse, "uMinimum1");
-  this.uMaximum1    = this.gl.getUniformLocation(this.programs.ruse, "uMaximum1");
-  this.uMinimum2    = this.gl.getUniformLocation(this.programs.ruse, "uMinimum2");
-  this.uMaximum2    = this.gl.getUniformLocation(this.programs.ruse, "uMaximum2");
-  this.uZComponent  = this.gl.getUniformLocation(this.programs.ruse, "uZComponent");
-  this.uTime        = this.gl.getUniformLocation(this.programs.ruse, "uTime");
-  this.uMargin      = this.gl.getUniformLocation(this.programs.ruse, "uMargin");
-  
+  this.uColor = this.gl.getUniformLocation(this.programs.ruse, "uColor");
+  this.uMinimum1 = this.gl.getUniformLocation(this.programs.ruse, "uMinimum1");
+  this.uMaximum1 = this.gl.getUniformLocation(this.programs.ruse, "uMaximum1");
+  this.uMinimum2 = this.gl.getUniformLocation(this.programs.ruse, "uMinimum2");
+  this.uMaximum2 = this.gl.getUniformLocation(this.programs.ruse, "uMaximum2");
+  this.uZComponent = this.gl.getUniformLocation(this.programs.ruse, "uZComponent");
+  this.uTime = this.gl.getUniformLocation(this.programs.ruse, "uTime");
+  this.uMargin = this.gl.getUniformLocation(this.programs.ruse, "uMargin");
   this.gl.useProgram(this.programs.ruse);
-  
   this.gl.uniform4f(this.uColor, 0.0, 0.4431, 0.8980, 1.0);
   this.gl.uniform1f(this.uMargin, this.getMargin());
-  
   this.pMatrix = mat4.create();
   this.mvMatrix = mat4.create();
   this.rotationMatrix = mat4.create();
   this._setMatrices(this.programs.ruse);
-  
   this.gl.viewport(0, 0, this.width, this.height);
   this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
   this.gl.enable(this.gl.DEPTH_TEST);
-  
   this.dataBuffer1 = this.gl.createBuffer();
   this.dataBuffer2 = this.gl.createBuffer();
   this.axesBuffer = this.gl.createBuffer();
   this.axesBuffer2 = this.gl.createBuffer();
-  
   this["switch"] = 0;
   this.state = null;
   this.isAnimating = false;
-  this.setupAxes3d();
+  this.setupAxes3d();  
 }
 
 ruse.prototype._loadShader = function(gl, source, type) {
   var compiled, shader;
-  
   shader = gl.createShader(type);
   gl.shaderSource(shader, source);
   gl.compileShader(shader);
@@ -100,10 +92,8 @@ ruse.prototype._loadShader = function(gl, source, type) {
 
 ruse.prototype._createProgram = function(gl, vertexShader, fragmentShader) {
   var linked, program;
-  
-  vertexShader    = this._loadShader(gl, vertexShader, gl.VERTEX_SHADER);
-  fragmentShader  = this._loadShader(gl, fragmentShader, gl.FRAGMENT_SHADER);
-  
+  vertexShader = this._loadShader(gl, vertexShader, gl.VERTEX_SHADER);
+  fragmentShader = this._loadShader(gl, fragmentShader, gl.FRAGMENT_SHADER);
   program = gl.createProgram();
   gl.attachShader(program, vertexShader);
   gl.attachShader(program, fragmentShader);
@@ -113,27 +103,20 @@ ruse.prototype._createProgram = function(gl, vertexShader, fragmentShader) {
     gl.deleteProgram(program);
     return null;
   }
-  
   gl.useProgram(program);
-  
   program.aVertexPosition1 = gl.getAttribLocation(program, "aVertexPosition1");
   gl.enableVertexAttribArray(program.aVertexPosition1);
-  
   program.aVertexPosition2 = gl.getAttribLocation(program, "aVertexPosition2");
   gl.enableVertexAttribArray(program.aVertexPosition2);
-  
   program.uPMatrix = gl.getUniformLocation(program, "uPMatrix");
   program.uMVMatrix = gl.getUniformLocation(program, "uMVMatrix");
-  
   return program;
 };
 
 ruse.prototype._createProgramAxes = function(gl, vertexShader, fragmentShader) {
   var linked, program;
-  
-  vertexShader    = this._loadShader(gl, vertexShader, gl.VERTEX_SHADER);
-  fragmentShader  = this._loadShader(gl, fragmentShader, gl.FRAGMENT_SHADER);
-  
+  vertexShader = this._loadShader(gl, vertexShader, gl.VERTEX_SHADER);
+  fragmentShader = this._loadShader(gl, fragmentShader, gl.FRAGMENT_SHADER);
   program = gl.createProgram();
   gl.attachShader(program, vertexShader);
   gl.attachShader(program, fragmentShader);
@@ -143,22 +126,18 @@ ruse.prototype._createProgramAxes = function(gl, vertexShader, fragmentShader) {
     gl.deleteProgram(program);
     return null;
   }
-  
   gl.useProgram(program);
-  
   program.aVertexPosition = gl.getAttribLocation(program, "aVertexPosition");
   gl.enableVertexAttribArray(program.aVertexPosition);
-  
   program.uPMatrix = gl.getUniformLocation(program, "uPMatrix");
   program.uMVMatrix = gl.getUniformLocation(program, "uMVMatrix");
-  
   return program;
 };
 
 ruse.prototype._setMatrices = function(program) {
   this.gl.useProgram(program);
   this.gl.uniformMatrix4fv(program.uPMatrix, false, this.pMatrix);
-  this.gl.uniformMatrix4fv(program.uMVMatrix, false, this.mvMatrix);
+  return this.gl.uniformMatrix4fv(program.uMVMatrix, false, this.mvMatrix);
 };
 
 ruse.prototype._toRadians = function(deg) { return deg * 0.017453292519943295; };
@@ -218,123 +197,41 @@ ruse.prototype._setupMouseControls = function() {
 ruse.prototype.draw = function() {
   this.gl.useProgram(this.programs.ruse);
   this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
-  
   mat4.identity(this.mvMatrix);
   mat4.translate(this.mvMatrix, this.mvMatrix, this.translateBy);
   mat4.multiply(this.mvMatrix, this.mvMatrix, this.rotationMatrix);
-  
   this._setMatrices(this.programs.ruse);
   this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
   this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition1, this.dataBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
-  
-  this.gl.drawArrays(this.drawMode, 0, this.dataBuffer1.numItems);
+  return this.gl.drawArrays(this.drawMode, 0, this.dataBuffer1.numItems);
 };
 
 ruse.prototype.removeAxes = function() {
-  this.axesCanvas.width = this.axesCanvas.width;
+  return this.axesCanvas.width = this.axesCanvas.width;
 };
 
 ruse.prototype.setupAxes3d = function() {
   var lineWidth, lineWidthX, lineWidthY, vertices;
-  
   lineWidth = 1.0;
   lineWidthX = lineWidth / this.width;
   lineWidthY = lineWidth / this.height;
-  
-  vertices = new Float32Array([
-    -1.0, -lineWidthY, -lineWidthX,
-    1.0, -lineWidthY, -lineWidthX,
-    -1.0, lineWidthY, -lineWidthX,
-    -1.0, -lineWidthY, lineWidthX,
-    1.0, -lineWidthY, lineWidthX,
-    -1.0, lineWidthY, lineWidthX,
-    -1.0, lineWidthY, -lineWidthX,
-    1.0, lineWidthY, -lineWidthX,
-    1.0, -lineWidthY, -lineWidthX,
-    -1.0, lineWidthY, lineWidthX,
-    1.0, lineWidthY, lineWidthX,
-    1.0, -lineWidthY, lineWidthX,
-    -1.0, lineWidthY, -lineWidthX,
-    -1.0, lineWidthY, lineWidthX,
-    1.0, lineWidthY, lineWidthX,
-    1.0, lineWidthY, lineWidthX,
-    1.0, lineWidthY, -lineWidthX,
-    -1.0, lineWidthY, -lineWidthX,
-    -1.0, -lineWidthY, -lineWidthX,
-    -1.0, -lineWidthY, lineWidthX,
-    1.0, -lineWidthY, lineWidthX,
-    1.0, -lineWidthY, lineWidthX,
-    1.0, -lineWidthY, -lineWidthX,
-    -1.0, -lineWidthY, -lineWidthX,
-    -lineWidthX, -1.0, -lineWidthX,
-    -lineWidthX, 1.0, -lineWidthX,
-    lineWidthX, -1.0, -lineWidthX,
-    -lineWidthX, -1.0, lineWidthX,
-    -lineWidthX, 1.0, lineWidthX,
-    lineWidthX, -1.0, lineWidthX,
-    lineWidthX, -1.0, -lineWidthX,
-    lineWidthX, 1.0, -lineWidthX,
-    -lineWidthX, 1.0, -lineWidthX,
-    lineWidthX, -1.0, lineWidthX,
-    lineWidthX, 1.0, lineWidthX,
-    -lineWidthX, 1.0, lineWidthX,
-    -lineWidthX, -1.0, -lineWidthX,
-    -lineWidthX, -1.0, lineWidthX,
-    -lineWidthX, 1.0, lineWidthX,
-    -lineWidthX, 1.0, lineWidthX,
-    -lineWidthX, 1.0, -lineWidthX,
-    -lineWidthX, -1.0, -lineWidthX,
-    lineWidthX, -1.0, -lineWidthX,
-    lineWidthX, -1.0, lineWidthX,
-    lineWidthX, 1.0, lineWidthX,
-    lineWidthX, 1.0, lineWidthX,
-    lineWidthX, 1.0, -lineWidthX,
-    lineWidthX, -1.0, -lineWidthX,
-    -lineWidthX, -lineWidthY, -1.0,
-    -lineWidthX, -lineWidthY, 1.0,
-    lineWidthX, -lineWidthY, -1.0,
-    -lineWidthX, lineWidthY, -1.0,
-    -lineWidthX, lineWidthY, 1.0,
-    lineWidthX, lineWidthY, -1.0,
-    lineWidthX, -lineWidthY, -1.0,
-    lineWidthX, -lineWidthY, 1.0,
-    -lineWidthX, -lineWidthY, 1.0,
-    lineWidthX, lineWidthY, -1.0,
-    lineWidthX, lineWidthY, 1.0,
-    -lineWidthX, lineWidthY, 1.0,
-    -lineWidthX, -lineWidthY, -1.0,
-    -lineWidthX, lineWidthY, -1.0,
-    -lineWidthX, lineWidthY, 1.0,
-    -lineWidthX, lineWidthY, 1.0,
-    -lineWidthX, -lineWidthY, 1.0,
-    -lineWidthX, -lineWidthY, -1.0,
-    lineWidthX, -lineWidthY, -1.0,
-    lineWidthX, lineWidthY, -1.0,
-    lineWidthX, lineWidthY, 1.0,
-    lineWidthX, lineWidthY, 1.0,
-    lineWidthX, -lineWidthY, 1.0,
-    lineWidthX, -lineWidthY, -1.0
-  ]);
-  
+  vertices = new Float32Array([-1.0, -lineWidthY, -lineWidthX, 1.0, -lineWidthY, -lineWidthX, -1.0, lineWidthY, -lineWidthX, -1.0, -lineWidthY, lineWidthX, 1.0, -lineWidthY, lineWidthX, -1.0, lineWidthY, lineWidthX, -1.0, lineWidthY, -lineWidthX, 1.0, lineWidthY, -lineWidthX, 1.0, -lineWidthY, -lineWidthX, -1.0, lineWidthY, lineWidthX, 1.0, lineWidthY, lineWidthX, 1.0, -lineWidthY, lineWidthX, -1.0, lineWidthY, -lineWidthX, -1.0, lineWidthY, lineWidthX, 1.0, lineWidthY, lineWidthX, 1.0, lineWidthY, lineWidthX, 1.0, lineWidthY, -lineWidthX, -1.0, lineWidthY, -lineWidthX, -1.0, -lineWidthY, -lineWidthX, -1.0, -lineWidthY, lineWidthX, 1.0, -lineWidthY, lineWidthX, 1.0, -lineWidthY, lineWidthX, 1.0, -lineWidthY, -lineWidthX, -1.0, -lineWidthY, -lineWidthX, -lineWidthX, -1.0, -lineWidthX, -lineWidthX, 1.0, -lineWidthX, lineWidthX, -1.0, -lineWidthX, -lineWidthX, -1.0, lineWidthX, -lineWidthX, 1.0, lineWidthX, lineWidthX, -1.0, lineWidthX, lineWidthX, -1.0, -lineWidthX, lineWidthX, 1.0, -lineWidthX, -lineWidthX, 1.0, -lineWidthX, lineWidthX, -1.0, lineWidthX, lineWidthX, 1.0, lineWidthX, -lineWidthX, 1.0, lineWidthX, -lineWidthX, -1.0, -lineWidthX, -lineWidthX, -1.0, lineWidthX, -lineWidthX, 1.0, lineWidthX, -lineWidthX, 1.0, lineWidthX, -lineWidthX, 1.0, -lineWidthX, -lineWidthX, -1.0, -lineWidthX, lineWidthX, -1.0, -lineWidthX, lineWidthX, -1.0, lineWidthX, lineWidthX, 1.0, lineWidthX, lineWidthX, 1.0, lineWidthX, lineWidthX, 1.0, -lineWidthX, lineWidthX, -1.0, -lineWidthX, -lineWidthX, -lineWidthY, -1.0, -lineWidthX, -lineWidthY, 1.0, lineWidthX, -lineWidthY, -1.0, -lineWidthX, lineWidthY, -1.0, -lineWidthX, lineWidthY, 1.0, lineWidthX, lineWidthY, -1.0, lineWidthX, -lineWidthY, -1.0, lineWidthX, -lineWidthY, 1.0, -lineWidthX, -lineWidthY, 1.0, lineWidthX, lineWidthY, -1.0, lineWidthX, lineWidthY, 1.0, -lineWidthX, lineWidthY, 1.0, -lineWidthX, -lineWidthY, -1.0, -lineWidthX, lineWidthY, -1.0, -lineWidthX, lineWidthY, 1.0, -lineWidthX, lineWidthY, 1.0, -lineWidthX, -lineWidthY, 1.0, -lineWidthX, -lineWidthY, -1.0, lineWidthX, -lineWidthY, -1.0, lineWidthX, lineWidthY, -1.0, lineWidthX, lineWidthY, 1.0, lineWidthX, lineWidthY, 1.0, lineWidthX, -lineWidthY, 1.0, lineWidthX, -lineWidthY, -1.0]);
   this.axesBuffer.itemSize = 3;
   this.axesBuffer.numItems = vertices.length / this.axesBuffer.itemSize;
   this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.axesBuffer);
   this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
-  this.gl.vertexAttribPointer(this.programs.axes.aVertexPosition1, this.axesBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
+  return this.gl.vertexAttribPointer(this.programs.axes.aVertexPosition1, this.axesBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
 };
 
 ruse.prototype.drawAxes3d = function() {
   this.gl.useProgram(this.programs.axes);
-  
   mat4.identity(this.mvMatrix);
   mat4.translate(this.mvMatrix, this.mvMatrix, this.translateBy);
   mat4.multiply(this.mvMatrix, this.mvMatrix, this.rotationMatrix);
-  
   this._setMatrices(this.programs.axes);
-  
   this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.axesBuffer);
   this.gl.vertexAttribPointer(this.programs.axes.aVertexPosition1, this.axesBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
-  this.gl.drawArrays(this.gl.TRIANGLES, 0, this.axesBuffer.numItems);
+  return this.gl.drawArrays(this.gl.TRIANGLES, 0, this.axesBuffer.numItems);
 };
 
 ruse.prototype.drawAxes = function() {
@@ -434,19 +331,15 @@ ruse.prototype.yp2y = function(yp) { return yp * this.height / 2; };
 
 ruse.prototype.xy2xpyp = function(x, y) {
   var xp, yp;
-  
   xp = 2 / this.width * x - 1;
   yp = -2 / this.height * y + 1;
-  
   return [xp, yp];
 };
 
 ruse.prototype.xpyp2xy = function(xp, yp) {
   var x, y;
-  
   x = this.width / 2 * (xp + 1);
   y = -this.height / 2 * (yp - 1);
-  
   return [x, y];
 };
 
@@ -598,3 +491,78 @@ ruse.prototype.animate = function() {
     }
   }, 1000 / 60);
 };
+
+
+
+
+
+ruse.shaders = {
+  vertex: [
+    "attribute vec3 aVertexPosition1;",
+    "attribute vec3 aVertexPosition2;",
+    
+    "uniform mat4 uMVMatrix;",
+    "uniform mat4 uPMatrix;",
+    
+    "uniform float uMargin;",
+    "uniform float uZComponent;",
+    
+    "uniform vec3 uMinimum1;",
+    "uniform vec3 uMaximum1;",
+    
+    "uniform vec3 uMinimum2;",
+    "uniform vec3 uMaximum2;",
+    
+    "uniform float uTime;",
+    
+    "void main(void) {",
+      "gl_PointSize = 1.25;",
+      
+      "float scaleComponent = 2.0 * (1.0 - uMargin);",
+      "float offsetComponent = (uMargin - 1.0);",
+      
+      "vec3 scale = vec3(scaleComponent, scaleComponent, uZComponent * scaleComponent);",
+      "vec3 offset = vec3(offsetComponent, offsetComponent, uZComponent * offsetComponent);",
+      
+      "vec3 range1 = uMaximum1 - uMinimum1;",
+      "vec3 range2 = uMaximum2 - uMinimum2;",
+      
+      "vec3 vertexPosition1 = scale / range1 * (aVertexPosition1 - uMinimum1) + offset;",
+      "vec3 vertexPosition2 = scale / range2 * (aVertexPosition2 - uMinimum2) + offset;",
+      
+      "vec3 vertexPosition = (1.0 - uTime) * vertexPosition1 + uTime * vertexPosition2;",
+      "gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);",
+    "}"
+    ].join("\n"),
+  fragment: [
+    "precision mediump float;",
+    
+    "uniform vec4 uColor;",
+    
+    "void main(void) {",
+      "gl_FragColor = uColor;",
+    "}"
+  ].join("\n"),
+  axesVertex: [
+    "attribute vec3 aVertexPosition1;",
+    "attribute vec3 aVertexPosition2;",
+    
+    "uniform mat4 uMVMatrix;",
+    "uniform mat4 uPMatrix;",
+    
+    "void main(void) {",
+      "vec3 vertexPosition = aVertexPosition2;",
+      "gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition1, 1.0);",
+    "}"
+    ].join("\n"),
+  axesFragment: [
+    "precision mediump float;",
+    
+    "void main(void) {",
+      "gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);",
+    "}"
+  ].join("\n")
+}
+  ruse.version = "0.1.0";
+  return ruse;
+})();
