@@ -9,7 +9,7 @@
   </style>
   
   <script type="text/javascript" src="lib/gl-matrix.js"></script>
-  <script type="text/javascript" src="../dist/ruse.js"></script>
+  <script type="text/javascript" src="../ruse.js"></script>
   
   <script type="text/javascript" src="lib/fits.js"></script>
   
@@ -17,14 +17,13 @@
   
   function main() {
     
-    // Pretend we already have a gl context running
+    // Initialize a WebGL context
     var canvas = document.querySelector("#ruse");
     canvas.width = 800;
     canvas.height = 400;
     var gl = canvas.getContext("webgl") || canvas.getContext("experimental-webgl");
     
     // Initialize a ruse (aka plot) using an existing gl context
-    // var ruse = new astro.Ruse(canvas, 500, 300);
     var r = new ruse(gl);
     
     // var path = "data/dr7qso.fit";
@@ -36,7 +35,6 @@
     // var path = "data/wmap_band_imap_r9_9yr_K_v5.fits";
     // var path = "data/gz2.fits";
     // var path = "data/out.fits";
-    
     
     new astro.FITS(path, function(f) {
       var table = f.getDataUnit(1);

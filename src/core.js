@@ -539,17 +539,17 @@ ruse.prototype.getExtent = function(arr) {
 // Generic call to plot data. This function determines the dimensionality
 // of the data and calls the appropriate function.
 ruse.prototype.plot = function() {
-  var arg, data, dimensions, keys;
+  var arg, datum, dimensions, keys;
   
   if (arguments.length === 1) {
     arg = arguments[0];
     
     if (this.isArray(arg)) {
-      data = arguments[0];
+      datum = arg[0];
       
-      if (this.isObject(data)) {
+      if (this.isObject(datum)) {
         
-        keys = Object.keys(data);
+        keys = Object.keys(datum);
         dimensions = keys.length;
         
         switch (dimensions) {
