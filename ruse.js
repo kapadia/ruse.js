@@ -1,6 +1,6 @@
 ruse = (function(){
 function ruse(arg, width, height) {
-  var s, shaders;
+  
   this.margin = 0.02;
   this.fontSize = 10;
   this.tickFontSize = 9;
@@ -16,7 +16,8 @@ function ruse(arg, width, height) {
   this.drawMode = null;
   this.extents = null;
   this.hasData = false;
-  s = arg.constructor.toString();
+  
+  var s = arg.constructor.toString();
   if (s.indexOf('WebGLRenderingContext') > -1 || s.indexOf('rawgl') > -1) {
     this.gl = arg;
     this.canvas = arg.canvas;
@@ -44,41 +45,48 @@ function ruse(arg, width, height) {
   this.axesCanvas.style.position = 'absolute';
   this.gl.canvas.parentElement.appendChild(this.axesCanvas);
   
-  console.log(ruse.shaders);
-  shaders = this.constructor.shaders;
+  var shaders = ruse.shaders;
   this.programs = {};
   this.programs["ruse"] = this._createProgram(this.gl, shaders.vertex, shaders.fragment);
   this.programs["axes"] = this._createProgram(this.gl, shaders.axesVertex, shaders.axesFragment);
-  this.uColor = this.gl.getUniformLocation(this.programs.ruse, "uColor");
-  this.uMinimum1 = this.gl.getUniformLocation(this.programs.ruse, "uMinimum1");
-  this.uMaximum1 = this.gl.getUniformLocation(this.programs.ruse, "uMaximum1");
-  this.uMinimum2 = this.gl.getUniformLocation(this.programs.ruse, "uMinimum2");
-  this.uMaximum2 = this.gl.getUniformLocation(this.programs.ruse, "uMaximum2");
-  this.uZComponent = this.gl.getUniformLocation(this.programs.ruse, "uZComponent");
-  this.uTime = this.gl.getUniformLocation(this.programs.ruse, "uTime");
-  this.uMargin = this.gl.getUniformLocation(this.programs.ruse, "uMargin");
+  
+  this.uColor       = this.gl.getUniformLocation(this.programs.ruse, "uColor");
+  this.uMinimum1    = this.gl.getUniformLocation(this.programs.ruse, "uMinimum1");
+  this.uMaximum1    = this.gl.getUniformLocation(this.programs.ruse, "uMaximum1");
+  this.uMinimum2    = this.gl.getUniformLocation(this.programs.ruse, "uMinimum2");
+  this.uMaximum2    = this.gl.getUniformLocation(this.programs.ruse, "uMaximum2");
+  this.uZComponent  = this.gl.getUniformLocation(this.programs.ruse, "uZComponent");
+  this.uTime        = this.gl.getUniformLocation(this.programs.ruse, "uTime");
+  this.uMargin      = this.gl.getUniformLocation(this.programs.ruse, "uMargin");
+  
   this.gl.useProgram(this.programs.ruse);
+  
   this.gl.uniform4f(this.uColor, 0.0, 0.4431, 0.8980, 1.0);
   this.gl.uniform1f(this.uMargin, this.getMargin());
+  
   this.pMatrix = mat4.create();
   this.mvMatrix = mat4.create();
   this.rotationMatrix = mat4.create();
   this._setMatrices(this.programs.ruse);
+  
   this.gl.viewport(0, 0, this.width, this.height);
   this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
   this.gl.enable(this.gl.DEPTH_TEST);
+  
   this.dataBuffer1 = this.gl.createBuffer();
   this.dataBuffer2 = this.gl.createBuffer();
   this.axesBuffer = this.gl.createBuffer();
   this.axesBuffer2 = this.gl.createBuffer();
+  
   this["switch"] = 0;
   this.state = null;
   this.isAnimating = false;
-  this.setupAxes3d();  
+  this.setupAxes3d();
 }
 
 ruse.prototype._loadShader = function(gl, source, type) {
   var compiled, shader;
+  
   shader = gl.createShader(type);
   gl.shaderSource(shader, source);
   gl.compileShader(shader);
@@ -92,8 +100,10 @@ ruse.prototype._loadShader = function(gl, source, type) {
 
 ruse.prototype._createProgram = function(gl, vertexShader, fragmentShader) {
   var linked, program;
-  vertexShader = this._loadShader(gl, vertexShader, gl.VERTEX_SHADER);
-  fragmentShader = this._loadShader(gl, fragmentShader, gl.FRAGMENT_SHADER);
+  
+  vertexShader    = this._loadShader(gl, vertexShader, gl.VERTEX_SHADER);
+  fragmentShader  = this._loadShader(gl, fragmentShader, gl.FRAGMENT_SHADER);
+  
   program = gl.createProgram();
   gl.attachShader(program, vertexShader);
   gl.attachShader(program, fragmentShader);
@@ -103,20 +113,27 @@ ruse.prototype._createProgram = function(gl, vertexShader, fragmentShader) {
     gl.deleteProgram(program);
     return null;
   }
+  
   gl.useProgram(program);
+  
   program.aVertexPosition1 = gl.getAttribLocation(program, "aVertexPosition1");
   gl.enableVertexAttribArray(program.aVertexPosition1);
+  
   program.aVertexPosition2 = gl.getAttribLocation(program, "aVertexPosition2");
   gl.enableVertexAttribArray(program.aVertexPosition2);
+  
   program.uPMatrix = gl.getUniformLocation(program, "uPMatrix");
   program.uMVMatrix = gl.getUniformLocation(program, "uMVMatrix");
+  
   return program;
 };
 
 ruse.prototype._createProgramAxes = function(gl, vertexShader, fragmentShader) {
   var linked, program;
-  vertexShader = this._loadShader(gl, vertexShader, gl.VERTEX_SHADER);
-  fragmentShader = this._loadShader(gl, fragmentShader, gl.FRAGMENT_SHADER);
+  
+  vertexShader    = this._loadShader(gl, vertexShader, gl.VERTEX_SHADER);
+  fragmentShader  = this._loadShader(gl, fragmentShader, gl.FRAGMENT_SHADER);
+  
   program = gl.createProgram();
   gl.attachShader(program, vertexShader);
   gl.attachShader(program, fragmentShader);
@@ -126,18 +143,22 @@ ruse.prototype._createProgramAxes = function(gl, vertexShader, fragmentShader) {
     gl.deleteProgram(program);
     return null;
   }
+  
   gl.useProgram(program);
+  
   program.aVertexPosition = gl.getAttribLocation(program, "aVertexPosition");
   gl.enableVertexAttribArray(program.aVertexPosition);
+  
   program.uPMatrix = gl.getUniformLocation(program, "uPMatrix");
   program.uMVMatrix = gl.getUniformLocation(program, "uMVMatrix");
+  
   return program;
 };
 
 ruse.prototype._setMatrices = function(program) {
   this.gl.useProgram(program);
   this.gl.uniformMatrix4fv(program.uPMatrix, false, this.pMatrix);
-  return this.gl.uniformMatrix4fv(program.uMVMatrix, false, this.mvMatrix);
+  this.gl.uniformMatrix4fv(program.uMVMatrix, false, this.mvMatrix);
 };
 
 ruse.prototype._toRadians = function(deg) { return deg * 0.017453292519943295; };
@@ -197,41 +218,123 @@ ruse.prototype._setupMouseControls = function() {
 ruse.prototype.draw = function() {
   this.gl.useProgram(this.programs.ruse);
   this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
+  
   mat4.identity(this.mvMatrix);
   mat4.translate(this.mvMatrix, this.mvMatrix, this.translateBy);
   mat4.multiply(this.mvMatrix, this.mvMatrix, this.rotationMatrix);
+  
   this._setMatrices(this.programs.ruse);
   this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
   this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition1, this.dataBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
-  return this.gl.drawArrays(this.drawMode, 0, this.dataBuffer1.numItems);
+  
+  this.gl.drawArrays(this.drawMode, 0, this.dataBuffer1.numItems);
 };
 
 ruse.prototype.removeAxes = function() {
-  return this.axesCanvas.width = this.axesCanvas.width;
+  this.axesCanvas.width = this.axesCanvas.width;
 };
 
 ruse.prototype.setupAxes3d = function() {
   var lineWidth, lineWidthX, lineWidthY, vertices;
+  
   lineWidth = 1.0;
   lineWidthX = lineWidth / this.width;
   lineWidthY = lineWidth / this.height;
-  vertices = new Float32Array([-1.0, -lineWidthY, -lineWidthX, 1.0, -lineWidthY, -lineWidthX, -1.0, lineWidthY, -lineWidthX, -1.0, -lineWidthY, lineWidthX, 1.0, -lineWidthY, lineWidthX, -1.0, lineWidthY, lineWidthX, -1.0, lineWidthY, -lineWidthX, 1.0, lineWidthY, -lineWidthX, 1.0, -lineWidthY, -lineWidthX, -1.0, lineWidthY, lineWidthX, 1.0, lineWidthY, lineWidthX, 1.0, -lineWidthY, lineWidthX, -1.0, lineWidthY, -lineWidthX, -1.0, lineWidthY, lineWidthX, 1.0, lineWidthY, lineWidthX, 1.0, lineWidthY, lineWidthX, 1.0, lineWidthY, -lineWidthX, -1.0, lineWidthY, -lineWidthX, -1.0, -lineWidthY, -lineWidthX, -1.0, -lineWidthY, lineWidthX, 1.0, -lineWidthY, lineWidthX, 1.0, -lineWidthY, lineWidthX, 1.0, -lineWidthY, -lineWidthX, -1.0, -lineWidthY, -lineWidthX, -lineWidthX, -1.0, -lineWidthX, -lineWidthX, 1.0, -lineWidthX, lineWidthX, -1.0, -lineWidthX, -lineWidthX, -1.0, lineWidthX, -lineWidthX, 1.0, lineWidthX, lineWidthX, -1.0, lineWidthX, lineWidthX, -1.0, -lineWidthX, lineWidthX, 1.0, -lineWidthX, -lineWidthX, 1.0, -lineWidthX, lineWidthX, -1.0, lineWidthX, lineWidthX, 1.0, lineWidthX, -lineWidthX, 1.0, lineWidthX, -lineWidthX, -1.0, -lineWidthX, -lineWidthX, -1.0, lineWidthX, -lineWidthX, 1.0, lineWidthX, -lineWidthX, 1.0, lineWidthX, -lineWidthX, 1.0, -lineWidthX, -lineWidthX, -1.0, -lineWidthX, lineWidthX, -1.0, -lineWidthX, lineWidthX, -1.0, lineWidthX, lineWidthX, 1.0, lineWidthX, lineWidthX, 1.0, lineWidthX, lineWidthX, 1.0, -lineWidthX, lineWidthX, -1.0, -lineWidthX, -lineWidthX, -lineWidthY, -1.0, -lineWidthX, -lineWidthY, 1.0, lineWidthX, -lineWidthY, -1.0, -lineWidthX, lineWidthY, -1.0, -lineWidthX, lineWidthY, 1.0, lineWidthX, lineWidthY, -1.0, lineWidthX, -lineWidthY, -1.0, lineWidthX, -lineWidthY, 1.0, -lineWidthX, -lineWidthY, 1.0, lineWidthX, lineWidthY, -1.0, lineWidthX, lineWidthY, 1.0, -lineWidthX, lineWidthY, 1.0, -lineWidthX, -lineWidthY, -1.0, -lineWidthX, lineWidthY, -1.0, -lineWidthX, lineWidthY, 1.0, -lineWidthX, lineWidthY, 1.0, -lineWidthX, -lineWidthY, 1.0, -lineWidthX, -lineWidthY, -1.0, lineWidthX, -lineWidthY, -1.0, lineWidthX, lineWidthY, -1.0, lineWidthX, lineWidthY, 1.0, lineWidthX, lineWidthY, 1.0, lineWidthX, -lineWidthY, 1.0, lineWidthX, -lineWidthY, -1.0]);
+  
+  vertices = new Float32Array([
+    -1.0, -lineWidthY, -lineWidthX,
+    1.0, -lineWidthY, -lineWidthX,
+    -1.0, lineWidthY, -lineWidthX,
+    -1.0, -lineWidthY, lineWidthX,
+    1.0, -lineWidthY, lineWidthX,
+    -1.0, lineWidthY, lineWidthX,
+    -1.0, lineWidthY, -lineWidthX,
+    1.0, lineWidthY, -lineWidthX,
+    1.0, -lineWidthY, -lineWidthX,
+    -1.0, lineWidthY, lineWidthX,
+    1.0, lineWidthY, lineWidthX,
+    1.0, -lineWidthY, lineWidthX,
+    -1.0, lineWidthY, -lineWidthX,
+    -1.0, lineWidthY, lineWidthX,
+    1.0, lineWidthY, lineWidthX,
+    1.0, lineWidthY, lineWidthX,
+    1.0, lineWidthY, -lineWidthX,
+    -1.0, lineWidthY, -lineWidthX,
+    -1.0, -lineWidthY, -lineWidthX,
+    -1.0, -lineWidthY, lineWidthX,
+    1.0, -lineWidthY, lineWidthX,
+    1.0, -lineWidthY, lineWidthX,
+    1.0, -lineWidthY, -lineWidthX,
+    -1.0, -lineWidthY, -lineWidthX,
+    -lineWidthX, -1.0, -lineWidthX,
+    -lineWidthX, 1.0, -lineWidthX,
+    lineWidthX, -1.0, -lineWidthX,
+    -lineWidthX, -1.0, lineWidthX,
+    -lineWidthX, 1.0, lineWidthX,
+    lineWidthX, -1.0, lineWidthX,
+    lineWidthX, -1.0, -lineWidthX,
+    lineWidthX, 1.0, -lineWidthX,
+    -lineWidthX, 1.0, -lineWidthX,
+    lineWidthX, -1.0, lineWidthX,
+    lineWidthX, 1.0, lineWidthX,
+    -lineWidthX, 1.0, lineWidthX,
+    -lineWidthX, -1.0, -lineWidthX,
+    -lineWidthX, -1.0, lineWidthX,
+    -lineWidthX, 1.0, lineWidthX,
+    -lineWidthX, 1.0, lineWidthX,
+    -lineWidthX, 1.0, -lineWidthX,
+    -lineWidthX, -1.0, -lineWidthX,
+    lineWidthX, -1.0, -lineWidthX,
+    lineWidthX, -1.0, lineWidthX,
+    lineWidthX, 1.0, lineWidthX,
+    lineWidthX, 1.0, lineWidthX,
+    lineWidthX, 1.0, -lineWidthX,
+    lineWidthX, -1.0, -lineWidthX,
+    -lineWidthX, -lineWidthY, -1.0,
+    -lineWidthX, -lineWidthY, 1.0,
+    lineWidthX, -lineWidthY, -1.0,
+    -lineWidthX, lineWidthY, -1.0,
+    -lineWidthX, lineWidthY, 1.0,
+    lineWidthX, lineWidthY, -1.0,
+    lineWidthX, -lineWidthY, -1.0,
+    lineWidthX, -lineWidthY, 1.0,
+    -lineWidthX, -lineWidthY, 1.0,
+    lineWidthX, lineWidthY, -1.0,
+    lineWidthX, lineWidthY, 1.0,
+    -lineWidthX, lineWidthY, 1.0,
+    -lineWidthX, -lineWidthY, -1.0,
+    -lineWidthX, lineWidthY, -1.0,
+    -lineWidthX, lineWidthY, 1.0,
+    -lineWidthX, lineWidthY, 1.0,
+    -lineWidthX, -lineWidthY, 1.0,
+    -lineWidthX, -lineWidthY, -1.0,
+    lineWidthX, -lineWidthY, -1.0,
+    lineWidthX, lineWidthY, -1.0,
+    lineWidthX, lineWidthY, 1.0,
+    lineWidthX, lineWidthY, 1.0,
+    lineWidthX, -lineWidthY, 1.0,
+    lineWidthX, -lineWidthY, -1.0
+  ]);
+  
   this.axesBuffer.itemSize = 3;
   this.axesBuffer.numItems = vertices.length / this.axesBuffer.itemSize;
   this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.axesBuffer);
   this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
-  return this.gl.vertexAttribPointer(this.programs.axes.aVertexPosition1, this.axesBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
+  this.gl.vertexAttribPointer(this.programs.axes.aVertexPosition1, this.axesBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
 };
 
 ruse.prototype.drawAxes3d = function() {
   this.gl.useProgram(this.programs.axes);
+  
   mat4.identity(this.mvMatrix);
   mat4.translate(this.mvMatrix, this.mvMatrix, this.translateBy);
   mat4.multiply(this.mvMatrix, this.mvMatrix, this.rotationMatrix);
+  
   this._setMatrices(this.programs.axes);
+  
   this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.axesBuffer);
   this.gl.vertexAttribPointer(this.programs.axes.aVertexPosition1, this.axesBuffer.itemSize, this.gl.FLOAT, false, 0, 0);
-  return this.gl.drawArrays(this.gl.TRIANGLES, 0, this.axesBuffer.numItems);
+  this.gl.drawArrays(this.gl.TRIANGLES, 0, this.axesBuffer.numItems);
 };
 
 ruse.prototype.drawAxes = function() {
@@ -331,15 +434,19 @@ ruse.prototype.yp2y = function(yp) { return yp * this.height / 2; };
 
 ruse.prototype.xy2xpyp = function(x, y) {
   var xp, yp;
+  
   xp = 2 / this.width * x - 1;
   yp = -2 / this.height * y + 1;
+  
   return [xp, yp];
 };
 
 ruse.prototype.xpyp2xy = function(xp, yp) {
   var x, y;
+  
   x = this.width / 2 * (xp + 1);
   y = -this.height / 2 * (yp - 1);
+  
   return [x, y];
 };
 
@@ -429,16 +536,22 @@ ruse.prototype.getExtent = function(arr) {
   return [min, max];
 };
 
+// Generic call to plot data. This function determines the dimensionality
+// of the data and calls the appropriate function.
 ruse.prototype.plot = function() {
-  var arg, args, datum, dimensions, keys;
-  args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-  if (args.length === 1) {
-    arg = args[0];
+  var arg, data, dimensions, keys;
+  
+  if (arguments.length === 1) {
+    arg = arguments[0];
+    
     if (this.isArray(arg)) {
-      datum = arg[0];
-      if (this.isObject(datum)) {
-        keys = Object.keys(datum);
+      data = arguments[0];
+      
+      if (this.isObject(data)) {
+        
+        keys = Object.keys(data);
         dimensions = keys.length;
+        
         switch (dimensions) {
           case 1:
             this.histogram(arg);
@@ -456,15 +569,17 @@ ruse.prototype.plot = function() {
       }
     }
   }
-  switch (args.length) {
+  
+  switch (arguments.length) {
     case 2:
-      this.scatter2D.apply(this, args);
+      this.scatter2D.apply(this, arguments);
       return;
     case 3:
-      this.scatter3D.apply(this, args);
+      this.scatter3D.apply(this, arguments);
       return;
   }
-  throw "Input data not recognized by Ruse.";
+  
+  throw "Input data not recognized.";
 };
 
 ruse.prototype.animate = function() {
@@ -492,9 +607,128 @@ ruse.prototype.animate = function() {
   }, 1000 / 60);
 };
 
+ruse.prototype.getHistogram = function(arr, min, max, bins) {
+  var dx, h, i, index, range, value;
+  range = max - min;
+  h = new Uint32Array(bins);
+  dx = range / bins;
+  i = arr.length;
+  while (i--) {
+    value = arr[i];
+    index = ~~((value - min) / dx);
+    h[index] += 1;
+  }
+  h.dx = dx;
+  return h;
+};
 
-
-
+ruse.prototype.histogram = function(data) {
+  var clipspaceBinWidth, clipspaceLower, clipspaceSize, clipspaceUpper, dataMax, dataMin, datum, h, histMax, histMin, i, index, initialVertices, key, margin, nVertices, value, vertexSize, vertices, width, x, y, y0, _i, _j, _len, _len1, _ref, _ref1;
+  this.gl.useProgram(this.programs.ruse);
+  if (this.state !== "histogram") {
+    this["switch"] = 0;
+    this.hasData = false;
+  }
+  this.state = "histogram";
+  this.gl.uniform1f(this.uZComponent, 0.0);
+  mat4.identity(this.pMatrix);
+  mat4.identity(this.mvMatrix);
+  mat4.identity(this.rotationMatrix);
+  this.translateBy = [0.0, 0.0, 0.0];
+  margin = this.getMargin();
+  datum = data[0];
+  if (this.isObject(datum)) {
+    key = Object.keys(datum)[0];
+    this.key1 = key;
+    this.key2 = "";
+    data = data.map(function(d) {
+      return d[key];
+    });
+  }
+  _ref = this.getExtent(data), dataMin = _ref[0], dataMax = _ref[1];
+  if (!this.bins) {
+    width = this.width - this.getMargin() * this.width;
+    this.bins = Math.floor(width / this.targetBinWidth);
+  }
+  h = this.getHistogram(data, dataMin, dataMax, this.bins);
+  _ref1 = this.getExtent(h), histMin = _ref1[0], histMax = _ref1[1];
+  clipspaceSize = 2.0;
+  clipspaceBinWidth = clipspaceSize / this.bins;
+  clipspaceLower = -1.0;
+  clipspaceUpper = 1.0;
+  vertexSize = 2;
+  nVertices = 6 * this.bins;
+  vertices = new Float32Array(vertexSize * nVertices);
+  x = -1.0;
+  y = y0 = -1.0;
+  for (index = _i = 0, _len = h.length; _i < _len; index = ++_i) {
+    value = h[index];
+    i = 12 * index;
+    vertices[i + 0] = x;
+    vertices[i + 1] = y0;
+    vertices[i + 2] = x;
+    vertices[i + 3] = (clipspaceUpper - clipspaceLower) * value / histMax + clipspaceLower;
+    vertices[i + 4] = x + clipspaceBinWidth;
+    vertices[i + 5] = y0;
+    vertices[i + 6] = vertices[i + 4];
+    vertices[i + 7] = vertices[i + 5];
+    vertices[i + 8] = vertices[i + 4];
+    vertices[i + 9] = vertices[i + 3];
+    vertices[i + 10] = vertices[i + 2];
+    vertices[i + 11] = vertices[i + 3];
+    x += clipspaceBinWidth;
+  }
+  if (!this.hasData) {
+    initialVertices = new Float32Array(vertexSize * nVertices);
+    for (i = _j = 0, _len1 = vertices.length; _j < _len1; i = _j += 2) {
+      datum = vertices[i];
+      initialVertices[i] = datum;
+      initialVertices[i + 1] = -1.0;
+    }
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, initialVertices, this.gl.STATIC_DRAW);
+    this.extents = {
+      xmin: dataMin,
+      xmax: dataMax,
+      ymin: histMin,
+      ymax: histMax
+    };
+    this.hasData = true;
+  }
+  this.dataBuffer1.itemSize = vertexSize;
+  this.dataBuffer1.numItems = nVertices;
+  this.dataBuffer2.itemSize = vertexSize;
+  this.dataBuffer2.numItems = nVertices;
+  this.gl.uniform3f(this.uMinimum1, -1, -1, 0);
+  this.gl.uniform3f(this.uMaximum1, 1, 1, 1);
+  this.gl.uniform3f(this.uMinimum2, -1, -1, 0);
+  this.gl.uniform3f(this.uMaximum2, 1, 1, 1);
+  if (this["switch"] === 0) {
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
+    this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition1, this.dataBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer2);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
+    this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition2, this.dataBuffer2.itemSize, this.gl.FLOAT, false, 0, 0);
+    this["switch"] = 1;
+  } else {
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
+    this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
+    this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition1, this.dataBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
+    this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer2);
+    this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition2, this.dataBuffer2.itemSize, this.gl.FLOAT, false, 0, 0);
+    this["switch"] = 0;
+  }
+  this.extents = {
+    xmin: dataMin,
+    xmax: dataMax,
+    ymin: histMin,
+    ymax: histMax
+  };
+  this.drawAxes();
+  this.drawMode = this.gl.TRIANGLES;
+  this.axesCanvas.onmousemove = null;
+  return this.animate();
+};
 
 ruse.shaders = {
   vertex: [

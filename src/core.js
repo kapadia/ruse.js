@@ -536,16 +536,22 @@ ruse.prototype.getExtent = function(arr) {
   return [min, max];
 };
 
+// Generic call to plot data. This function determines the dimensionality
+// of the data and calls the appropriate function.
 ruse.prototype.plot = function() {
-  var arg, args, datum, dimensions, keys;
-  args = 1 <= arguments.length ? __slice.call(arguments, 0) : [];
-  if (args.length === 1) {
-    arg = args[0];
+  var arg, data, dimensions, keys;
+  
+  if (arguments.length === 1) {
+    arg = arguments[0];
+    
     if (this.isArray(arg)) {
-      datum = arg[0];
-      if (this.isObject(datum)) {
-        keys = Object.keys(datum);
+      data = arguments[0];
+      
+      if (this.isObject(data)) {
+        
+        keys = Object.keys(data);
         dimensions = keys.length;
+        
         switch (dimensions) {
           case 1:
             this.histogram(arg);
@@ -563,15 +569,17 @@ ruse.prototype.plot = function() {
       }
     }
   }
-  switch (args.length) {
+  
+  switch (arguments.length) {
     case 2:
-      this.scatter2D.apply(this, args);
+      this.scatter2D.apply(this, arguments);
       return;
     case 3:
-      this.scatter3D.apply(this, args);
+      this.scatter3D.apply(this, arguments);
       return;
   }
-  throw "Input data not recognized by Ruse.";
+  
+  throw "Input data not recognized.";
 };
 
 ruse.prototype.animate = function() {
