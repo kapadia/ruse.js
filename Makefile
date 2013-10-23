@@ -4,6 +4,7 @@ FILES = \
 	src/histogram.js \
 	src/scatter2d.js \
 	src/scatter3d.js \
+	src/setters.js \
 	src/shaders.js \
 
 
