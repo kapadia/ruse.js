@@ -17,7 +17,7 @@
     "url": "https://github.com/kapadia/ruse.js.git"
   },
   "scripts": {
-    "start": "http-server"
+    "start": "node -e \"var exec = require('child_process').exec; var fs = require('fs'); fs.watch('src', {persistent: true}, function() { exec('make') });\""
   },
   "devDependencies": {
     "http-server": "~0.5.x",

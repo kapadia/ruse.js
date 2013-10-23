@@ -9,10 +9,5 @@ FILES = \
 
 
 all:
-	# mkdir -vp temp
-	# for f in $(FILES); do \
-	# 	cp src/$$f "$$($$f | sed 's/^/  /')"; \
-	# done
-	
 	cat src/start.js $(FILES) src/end.js > ruse.js
 	node_modules/.bin/uglifyjs ruse.js -o ruse.min.js
