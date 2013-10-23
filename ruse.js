@@ -13,6 +13,7 @@ function ruse(arg, width, height) {
   this.tickDecimals = 3;
   this.targetBinWidth = 1;
   this.bins = null;
+  
   this.drawMode = null;
   this.extents = null;
   this.hasData = false;
@@ -194,24 +195,31 @@ ruse.prototype._setupMouseControls = function() {
     mat4.multiply(_this.rotationMatrix, rotationMatrix, _this.rotationMatrix);
     _this.xOldOffset = x;
     _this.yOldOffset = y;
+    
+    if (e.shiftKey) {
+      var sensitivity = 0.001;
+      vec3.add(_this.translateBy, _this.translateBy, [sensitivity * deltaX, sensitivity * deltaY, 0]);
+    }
+    
     _this.draw();
-    return _this.drawAxes3d();
+    _this.drawAxes3d();
   };
-  this.axesCanvas.onmouseout = function(e) {
-    return _this.drag = false;
-  };
-  this.axesCanvas.onmouseover = function(e) {
-    return _this.drag = false;
-  };
+  
+  this.axesCanvas.onmouseout = function(e) { _this.drag = false; };
+  
+  this.axesCanvas.onmouseover = function(e) { _this.drag = false; };
+  
   this.axesCanvas.onmousewheel = function(e) {
-    var sensitivity;
     e.preventDefault();
-    sensitivity = 0.001;
+    
+    var sensitivity = 0.001;
     vec3.add(_this.translateBy, _this.translateBy, [0, 0, e.wheelDeltaY * sensitivity]);
     _this.draw();
     return _this.drawAxes3d();
   };
-  return this.axesCanvas.onwheel = this.axesCanvas.onmousewheel;
+  
+  // Map event to Firefox's event handler
+  this.axesCanvas.onwheel = this.axesCanvas.onmousewheel;
 };
 
 
