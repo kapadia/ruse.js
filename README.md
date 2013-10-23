@@ -1,6 +1,6 @@
 # ruse.js
 
-`ruse.js` is a WebGL plotting library.  It is capable of plotting millions of points using a modern browser.
+`ruse.js` is a lightweight WebGL library built for plotting large datasets. It is capable of plotting millions of points at once, and smoothly transitioning between plots.
 
 ## Dependency
 
@@ -8,15 +8,15 @@
 
 ## Usage
 
-Include 'gl-matrix' and 'ruse' into a project using the usual script tags.
+Include `gl-matrix` and `ruse.js` into a project using the usual script tags.
 
     <script type="text/javascript" src="gl-matrix.js"></script>
     <script type="text/javascript" src="ruse.js"></script>
     
-Set up a new plot by initializing a `ruse` object with a DOM element and specifying the width and height.
+Set up a new plot by initializing a `ruse` object using a DOM element and specifying width and height.
     
     var el = document.querySelector("#ruse");
-    var ruse = new astro.Ruse(el, 600, 400);
+    var ruse = new ruse(el, 600, 400);
 
 Create a plot by passing an array of key-value objects.  `ruse` determines the dimensionality based on the first key-value element in the array, and creates an appropriate plot.
 
@@ -25,7 +25,7 @@ Create a plot by passing an array of key-value objects.  `ruse` determines the d
 
 ## Development Setup
 
-    # Get dependencies and sample data for examples
+    # Get example dependencies and sample data
     ./setup.sh
     
     # Install development dependencies
