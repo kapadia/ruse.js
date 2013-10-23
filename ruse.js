@@ -1,4 +1,4 @@
-
+ruse = (function(){
 function ruse(arg, width, height) {
   
   this.margin = 0.02;
@@ -976,3 +976,6 @@ ruse.shaders = {
     "}"
   ].join("\n")
 }
+  ruse.version = "0.1.0";
+  return ruse;
+})();
