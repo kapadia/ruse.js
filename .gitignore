@@ -3,3 +3,4 @@ examples/lib
 examples/data
 npm-debug.log
 node_modules/
+tmp/
