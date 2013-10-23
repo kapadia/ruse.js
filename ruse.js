@@ -1,4 +1,4 @@
-ruse = (function(){
+
 function ruse(arg, width, height) {
   
   this.margin = 0.02;
@@ -572,7 +572,6 @@ ruse.prototype.plot = function() {
   
   switch (arguments.length) {
     case 2:
-      console.log(arguments);
       this.scatter2D.apply(this, arguments);
       return;
     case 3:
@@ -977,6 +976,3 @@ ruse.shaders = {
     "}"
   ].join("\n")
 }
-  ruse.version = "0.1.0";
-  return ruse;
-})();

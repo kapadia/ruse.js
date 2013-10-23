@@ -1,7 +1,17 @@
 {
   "name": "ruse.js",
   "version": "0.1.0",
-  "author": "Amit Kapadia <amit@zooniverse.org>",
+  "description": "A lightweight WebGL library built for plotting large datasets.",
+  "keywords": [
+    "webgl",
+    "science",
+    "visualization"
+  ],
+  "homepage": "http://kapadia.github.io/ruse.js/",
+  "author": {
+    "name": "Amit Kapadia",
+    "url": "http://kapadia.github.io/"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/kapadia/ruse.js.git"
@@ -10,6 +20,8 @@
     "start": "http-server"
   },
   "devDependencies": {
-    "http-server": "~0.5.x"
-  }
+    "http-server": "~0.5.x",
+    "uglify-js": "~2.4.x"
+  },
+  "license": "MIT"
 }
