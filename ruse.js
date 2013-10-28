@@ -165,25 +165,31 @@ ruse = (function(){
   ruse.prototype._toRadians = function(deg) { return deg * 0.017453292519943295; };
   
   ruse.prototype._setupMouseControls = function() {
+    
     var _this = this;
+    
     this.drag = false;
     this.xOldOffset = null;
     this.yOldOffset = null;
     this.xOffset = 0;
     this.yOffset = 0;
+    
     this.axesCanvas.onmousedown = function(e) {
       _this.drag = true;
       _this.xOldOffset = e.clientX;
       return _this.yOldOffset = e.clientY;
     };
+    
     this.axesCanvas.onmouseup = function(e) {
       return _this.drag = false;
     };
+    
     this.axesCanvas.onmousemove = function(e) {
       var deltaX, deltaY, rotationMatrix, x, y;
-      if (!_this.drag) {
+      
+      if (!_this.drag)
         return;
-      }
+      
       x = e.clientX;
       y = e.clientY;
       deltaX = x - _this.xOldOffset;
@@ -196,11 +202,6 @@ ruse = (function(){
       _this.xOldOffset = x;
       _this.yOldOffset = y;
       
-      if (e.shiftKey) {
-        var sensitivity = 0.001;
-        vec3.add(_this.translateBy, _this.translateBy, [sensitivity * deltaX, sensitivity * deltaY, 0]);
-      }
-      
       _this.draw();
       _this.drawAxes3d();
     };
@@ -209,17 +210,20 @@ ruse = (function(){
     
     this.axesCanvas.onmouseover = function(e) { _this.drag = false; };
     
-    this.axesCanvas.onmousewheel = function(e) {
+    // Define zoom behavior for 3D scene
+    wheelHandler = function(e) {
       e.preventDefault();
       
-      var sensitivity = 0.001;
-      vec3.add(_this.translateBy, _this.translateBy, [0, 0, e.wheelDeltaY * sensitivity]);
+      var factor = e.shiftKey ? 1.01 : 1.1;
+      var zoom = ((e.wheelDelta || e.deltaY) < 0) ? 1 / factor : factor;
+      
+      vec3.multiply(_this.translateBy, _this.translateBy, [0, 0, zoom])
       _this.draw();
-      return _this.drawAxes3d();
-    };
+      _this.drawAxes3d();
+    }
     
-    // Map event to Firefox's event handler
-    this.axesCanvas.onwheel = this.axesCanvas.onmousewheel;
+    this.axesCanvas.onmousewheel = wheelHandler;
+    this.axesCanvas.onwheel = wheelHandler;
   };
   
   
@@ -831,19 +835,28 @@ ruse = (function(){
   
   ruse.prototype.scatter3D = function(data) {
     var datum, i, index, initialVertices, max1, max2, max3, min1, min2, min3, nVertices, range1, range2, range3, vertexSize, vertices, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3;
+    
     this.gl.useProgram(this.programs.ruse);
+    
     if (this.state !== "scatter3D") {
       this["switch"] = 0;
       this.hasData = false;
     }
     this.state = "scatter3D";
+    
+    // Add perspective when working in three dimensions
+    // mat4.perspective(@pMatrix, 45.0, 1.0, 0.1, 100.0)
     mat4.perspective(this.pMatrix, 45.0, this.canvas.width / this.canvas.height, 0.1, 100.0);
     this.translateBy = this.translateBy || [0.0, 0.0, -4.0];
     this.gl.uniform1f(this.uZComponent, 1.0);
+    
+    // Proceed to handling the real data
     vertexSize = 3;
     nVertices = data.length;
     vertices = new Float32Array(vertexSize * nVertices);
+    
     _ref = Object.keys(data[0]), this.key1 = _ref[0], this.key2 = _ref[1], this.key3 = _ref[2];
+    
     _ref1 = this.getExtentFromObjects(data), (_ref2 = _ref1[0], min1 = _ref2[0], min2 = _ref2[1], min3 = _ref2[2]), (_ref3 = _ref1[1], max1 = _ref3[0], max2 = _ref3[1], max3 = _ref3[2]);
     range1 = max1 - min1;
     range2 = max2 - min2;

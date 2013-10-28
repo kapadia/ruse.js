@@ -165,25 +165,31 @@ ruse.prototype._setMatrices = function(program) {
 ruse.prototype._toRadians = function(deg) { return deg * 0.017453292519943295; };
 
 ruse.prototype._setupMouseControls = function() {
+  
   var _this = this;
+  
   this.drag = false;
   this.xOldOffset = null;
   this.yOldOffset = null;
   this.xOffset = 0;
   this.yOffset = 0;
+  
   this.axesCanvas.onmousedown = function(e) {
     _this.drag = true;
     _this.xOldOffset = e.clientX;
     return _this.yOldOffset = e.clientY;
   };
+  
   this.axesCanvas.onmouseup = function(e) {
     return _this.drag = false;
   };
+  
   this.axesCanvas.onmousemove = function(e) {
     var deltaX, deltaY, rotationMatrix, x, y;
-    if (!_this.drag) {
+    
+    if (!_this.drag)
       return;
-    }
+    
     x = e.clientX;
     y = e.clientY;
     deltaX = x - _this.xOldOffset;
@@ -196,11 +202,6 @@ ruse.prototype._setupMouseControls = function() {
     _this.xOldOffset = x;
     _this.yOldOffset = y;
     
-    if (e.shiftKey) {
-      var sensitivity = 0.001;
-      vec3.add(_this.translateBy, _this.translateBy, [sensitivity * deltaX, sensitivity * deltaY, 0]);
-    }
-    
     _this.draw();
     _this.drawAxes3d();
   };
@@ -209,17 +210,20 @@ ruse.prototype._setupMouseControls = function() {
   
   this.axesCanvas.onmouseover = function(e) { _this.drag = false; };
   
-  this.axesCanvas.onmousewheel = function(e) {
+  // Define zoom behavior for 3D scene
+  wheelHandler = function(e) {
     e.preventDefault();
     
-    var sensitivity = 0.001;
-    vec3.add(_this.translateBy, _this.translateBy, [0, 0, e.wheelDeltaY * sensitivity]);
+    var factor = e.shiftKey ? 1.01 : 1.1;
+    var zoom = ((e.wheelDelta || e.deltaY) < 0) ? 1 / factor : factor;
+    
+    vec3.multiply(_this.translateBy, _this.translateBy, [0, 0, zoom])
     _this.draw();
-    return _this.drawAxes3d();
-  };
+    _this.drawAxes3d();
+  }
   
-  // Map event to Firefox's event handler
-  this.axesCanvas.onwheel = this.axesCanvas.onmousewheel;
+  this.axesCanvas.onmousewheel = wheelHandler;
+  this.axesCanvas.onwheel = wheelHandler;
 };
 
 
