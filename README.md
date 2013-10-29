@@ -16,12 +16,16 @@ Include `gl-matrix` and `ruse.js` into a project using the usual script tags.
 Set up a new plot by initializing a `ruse` object using a DOM element and specifying width and height.
     
     var el = document.querySelector("#ruse");
-    var ruse = new ruse(el, 600, 400);
+    var r = new ruse(el, 600, 400);
 
 Create a plot by passing an array of key-value objects.  `ruse` determines the dimensionality based on the first key-value element in the array, and creates an appropriate plot.
 
     var data = [{x: 349, y: 920}, ..., {x: 192, y: 291}];
-    ruse.plot(data);
+    r.plot(data);
+    
+To disable animation, set the animation property to `false`:
+
+    r.animation = false;
 
 ## Development Setup
 
