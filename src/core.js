@@ -14,6 +14,9 @@ function ruse(arg, width, height) {
   this.targetBinWidth = 1;
   this.bins = null;
   
+  // Turn off animation by toggling this parameter
+  this.animation = true;
+  
   this.drawMode = null;
   this.extents = null;
   this.hasData = false;
@@ -207,15 +210,15 @@ ruse.prototype._setupMouseControls = function() {
   };
   
   this.axesCanvas.onmouseout = function(e) { _this.drag = false; };
-  
   this.axesCanvas.onmouseover = function(e) { _this.drag = false; };
   
   // Define zoom behavior for 3D scene
   wheelHandler = function(e) {
+    var factor, zoom;
     e.preventDefault();
     
-    var factor = e.shiftKey ? 1.01 : 1.1;
-    var zoom = ((e.wheelDelta || e.deltaY) < 0) ? 1 / factor : factor;
+    factor = e.shiftKey ? 1.01 : 1.1;
+    zoom = ((e.wheelDelta || e.deltaY) < 0) ? 1 / factor : factor;
     
     vec3.multiply(_this.translateBy, _this.translateBy, [0, 0, zoom])
     _this.draw();
@@ -437,11 +440,8 @@ ruse.prototype.getMargin = function() {
 };
 
 ruse.prototype.x2xp = function(x) { return 2 / this.width * x; };
-
 ruse.prototype.y2yp = function(y) { return -2 / this.height * y;};
-
 ruse.prototype.xp2x = function(xp) { return xp * this.width / 2; };
-
 ruse.prototype.yp2y = function(yp) { return yp * this.height / 2; };
 
 ruse.prototype.xy2xpyp = function(x, y) {
@@ -463,8 +463,8 @@ ruse.prototype.xpyp2xy = function(xp, yp) {
 };
 
 ruse.prototype.isArray = function(obj) {
-  var type;
-  type = Object.prototype.toString.call(obj);
+  var type = Object.prototype.toString.call(obj);
+  
   if (type.indexOf('Array') > -1) {
     return true;
   } else {
@@ -473,8 +473,8 @@ ruse.prototype.isArray = function(obj) {
 };
 
 ruse.prototype.isObject = function(obj) {
-  var type;
-  type = Object.prototype.toString.call(obj);
+  var type = Object.prototype.toString.call(obj);
+  
   if (type.indexOf('Object') > -1) {
     return true;
   } else {
@@ -484,6 +484,7 @@ ruse.prototype.isObject = function(obj) {
 
 ruse.prototype.linspace = function(start, stop, num) {
   var range, step, steps;
+  
   range = stop - start;
   step = range / (num - 1);
   steps = new Float32Array(num);
@@ -521,6 +522,7 @@ ruse.prototype.getExtentFromObjects = function(data) {
 
 ruse.prototype.getExtent = function(arr) {
   var index, max, min, value;
+  
   index = arr.length;
   while (index--) {
     value = arr[index];
@@ -595,26 +597,47 @@ ruse.prototype.plot = function() {
 };
 
 ruse.prototype.animate = function() {
-  var i,
-    _this = this;
-  if (this.isAnimating) {
+  var _this = this,
+      i = 0;
+  
+  if (this.isAnimating)
     clearInterval(this.intervalId);
-  }
-  i = 0;
+  
   this.isAnimating = true;
-  return this.intervalId = setInterval(function() {
+  this.intervalId = setInterval(function() {
     var uTime;
     i += 1;
     uTime = _this["switch"] === 1 ? i / 45 : 1 - i / 45;
+    
     _this.gl.useProgram(_this.programs.ruse);
     _this.gl.uniform1f(_this.uTime, uTime);
     _this.draw();
-    if (_this.state === "scatter3D") {
-      _this.drawAxes3d();
-    }
+    
     if (i === 45) {
       clearInterval(_this.intervalId);
-      return _this.isAnimating = false;
+      _this.isAnimating = false;
+      
+      if (_this.state === "scatter3D")
+        _this.drawAxes3d();
     }
   }, 1000 / 60);
+
+};
+
+ruse.prototype.redraw = function() {
+  var uTime;
+  
+  if (this.animation) {
+    this.animate();
+  } else {
+    uTime = this["switch"] === 1 ? 1 : 0;
+    
+    this.gl.useProgram(this.programs.ruse);
+    this.gl.uniform1f(this.uTime, uTime);
+    this.draw();
+    
+    if (this.state === "scatter3D")
+      this.drawAxes3d();
+  }
+  
 };

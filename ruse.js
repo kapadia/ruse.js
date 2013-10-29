@@ -14,6 +14,9 @@ ruse = (function(){
     this.targetBinWidth = 1;
     this.bins = null;
     
+    // Turn off animation by toggling this parameter
+    this.animation = true;
+    
     this.drawMode = null;
     this.extents = null;
     this.hasData = false;
@@ -207,15 +210,15 @@ ruse = (function(){
     };
     
     this.axesCanvas.onmouseout = function(e) { _this.drag = false; };
-    
     this.axesCanvas.onmouseover = function(e) { _this.drag = false; };
     
     // Define zoom behavior for 3D scene
     wheelHandler = function(e) {
+      var factor, zoom;
       e.preventDefault();
       
-      var factor = e.shiftKey ? 1.01 : 1.1;
-      var zoom = ((e.wheelDelta || e.deltaY) < 0) ? 1 / factor : factor;
+      factor = e.shiftKey ? 1.01 : 1.1;
+      zoom = ((e.wheelDelta || e.deltaY) < 0) ? 1 / factor : factor;
       
       vec3.multiply(_this.translateBy, _this.translateBy, [0, 0, zoom])
       _this.draw();
@@ -437,11 +440,8 @@ ruse = (function(){
   };
   
   ruse.prototype.x2xp = function(x) { return 2 / this.width * x; };
-  
   ruse.prototype.y2yp = function(y) { return -2 / this.height * y;};
-  
   ruse.prototype.xp2x = function(xp) { return xp * this.width / 2; };
-  
   ruse.prototype.yp2y = function(yp) { return yp * this.height / 2; };
   
   ruse.prototype.xy2xpyp = function(x, y) {
@@ -463,8 +463,8 @@ ruse = (function(){
   };
   
   ruse.prototype.isArray = function(obj) {
-    var type;
-    type = Object.prototype.toString.call(obj);
+    var type = Object.prototype.toString.call(obj);
+    
     if (type.indexOf('Array') > -1) {
       return true;
     } else {
@@ -473,8 +473,8 @@ ruse = (function(){
   };
   
   ruse.prototype.isObject = function(obj) {
-    var type;
-    type = Object.prototype.toString.call(obj);
+    var type = Object.prototype.toString.call(obj);
+    
     if (type.indexOf('Object') > -1) {
       return true;
     } else {
@@ -484,6 +484,7 @@ ruse = (function(){
   
   ruse.prototype.linspace = function(start, stop, num) {
     var range, step, steps;
+    
     range = stop - start;
     step = range / (num - 1);
     steps = new Float32Array(num);
@@ -521,6 +522,7 @@ ruse = (function(){
   
   ruse.prototype.getExtent = function(arr) {
     var index, max, min, value;
+    
     index = arr.length;
     while (index--) {
       value = arr[index];
@@ -595,28 +597,49 @@ ruse = (function(){
   };
   
   ruse.prototype.animate = function() {
-    var i,
-      _this = this;
-    if (this.isAnimating) {
+    var _this = this,
+        i = 0;
+    
+    if (this.isAnimating)
       clearInterval(this.intervalId);
-    }
-    i = 0;
+    
     this.isAnimating = true;
-    return this.intervalId = setInterval(function() {
+    this.intervalId = setInterval(function() {
       var uTime;
       i += 1;
       uTime = _this["switch"] === 1 ? i / 45 : 1 - i / 45;
+      
       _this.gl.useProgram(_this.programs.ruse);
       _this.gl.uniform1f(_this.uTime, uTime);
       _this.draw();
-      if (_this.state === "scatter3D") {
-        _this.drawAxes3d();
-      }
+      
       if (i === 45) {
         clearInterval(_this.intervalId);
-        return _this.isAnimating = false;
+        _this.isAnimating = false;
+        
+        if (_this.state === "scatter3D")
+          _this.drawAxes3d();
       }
     }, 1000 / 60);
+  
+  };
+  
+  ruse.prototype.redraw = function() {
+    var uTime;
+    
+    if (this.animation) {
+      this.animate();
+    } else {
+      uTime = this["switch"] === 1 ? 1 : 0;
+      
+      this.gl.useProgram(this.programs.ruse);
+      this.gl.uniform1f(this.uTime, uTime);
+      this.draw();
+      
+      if (this.state === "scatter3D")
+        this.drawAxes3d();
+    }
+    
   };
   
   ruse.prototype.getHistogram = function(arr, min, max, bins) {
@@ -750,20 +773,28 @@ ruse = (function(){
       this["switch"] = 0;
       this.hasData = false;
     }
+    
     this.state = "scatter2D";
     this.gl.uniform1f(this.uZComponent, 0.0);
+    
     mat4.identity(this.pMatrix);
     mat4.identity(this.mvMatrix);
     mat4.identity(this.rotationMatrix);
+    
     this.translateBy = [0.0, 0.0, 0.0];
     margin = this.getMargin();
+    
     vertexSize = 2;
     nVertices = data.length;
+    
     vertices = new Float32Array(vertexSize * nVertices);
+    
     _ref = Object.keys(data[0]), this.key1 = _ref[0], this.key2 = _ref[1];
     _ref1 = this.getExtentFromObjects(data), (_ref2 = _ref1[0], min1 = _ref2[0], min2 = _ref2[1]), (_ref3 = _ref1[1], max1 = _ref3[0], max2 = _ref3[1]);
+    
     range1 = max1 - min1;
     range2 = max2 - min2;
+    
     for (index = _i = 0, _len = data.length; _i < _len; index = ++_i) {
       datum = data[index];
       i = vertexSize * index;
@@ -826,11 +857,13 @@ ruse = (function(){
     
     this.drawAxes();
     this.drawMode = this.gl.POINTS;
+    
+    // Disable mouse events
     this.axesCanvas.onmousemove = null;
     this.axesCanvas.onwheel = null;
     this.axesCanvas.onmousewheel = null;
-    this.animate();
     
+    this.redraw();
   };
   
   ruse.prototype.scatter3D = function(data) {
@@ -838,15 +871,18 @@ ruse = (function(){
     
     this.gl.useProgram(this.programs.ruse);
     
+    // Reset when transitioning from another chart type
     if (this.state !== "scatter3D") {
       this["switch"] = 0;
       this.hasData = false;
+      this.translateBy = undefined;
+      this.removeAxes();
     }
     this.state = "scatter3D";
     
-    // Add perspective when working in three dimensions
-    // mat4.perspective(@pMatrix, 45.0, 1.0, 0.1, 100.0)
+    // Set perspective matrix
     mat4.perspective(this.pMatrix, 45.0, this.canvas.width / this.canvas.height, 0.1, 100.0);
+    
     this.translateBy = this.translateBy || [0.0, 0.0, -4.0];
     this.gl.uniform1f(this.uZComponent, 1.0);
     
@@ -880,12 +916,9 @@ ruse = (function(){
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
       this.gl.bufferData(this.gl.ARRAY_BUFFER, initialVertices, this.gl.STATIC_DRAW);
       this.extents = {
-        xmin: min1,
-        xmax: max1,
-        ymin: min2,
-        ymax: max2,
-        zmin: min3,
-        zmax: max3
+        xmin: min1, xmax: max1,
+        ymin: min2, ymax: max2,
+        zmin: min3, zmax: max3
       };
       this.hasData = true;
     }
@@ -893,41 +926,47 @@ ruse = (function(){
     this.dataBuffer1.numItems = nVertices;
     this.dataBuffer2.itemSize = vertexSize;
     this.dataBuffer2.numItems = nVertices;
+    
     if (this["switch"] === 0) {
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
       this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition1, this.dataBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
+      
       this.gl.uniform3f(this.uMinimum1, this.extents.xmin, this.extents.ymin, this.extents.zmin);
       this.gl.uniform3f(this.uMaximum1, this.extents.xmax, this.extents.ymax, this.extents.zmax);
       this.gl.uniform3f(this.uMinimum2, min1, min2, min3);
       this.gl.uniform3f(this.uMaximum2, max1, max2, max3);
+      
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer2);
       this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
       this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition2, this.dataBuffer2.itemSize, this.gl.FLOAT, false, 0, 0);
+      
       this["switch"] = 1;
     } else {
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
       this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
       this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition1, this.dataBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
+      
       this.gl.uniform3f(this.uMinimum1, min1, min2, min3);
       this.gl.uniform3f(this.uMaximum1, max1, max2, max3);
       this.gl.uniform3f(this.uMinimum2, this.extents.xmin, this.extents.ymin, this.extents.zmin);
       this.gl.uniform3f(this.uMaximum2, this.extents.xmax, this.extents.ymax, this.extents.zmax);
+      
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer2);
       this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition2, this.dataBuffer2.itemSize, this.gl.FLOAT, false, 0, 0);
+      
       this["switch"] = 0;
     }
+    
     this.extents = {
-      xmin: min1,
-      xmax: max1,
-      ymin: min2,
-      ymax: max2,
-      zmin: min3,
-      zmax: max3
+      xmin: min1, xmax: max1,
+      ymin: min2, ymax: max2,
+      zmin: min3, zmax: max3
     };
+    
     this._setupMouseControls();
-    this.removeAxes();
     this.drawMode = this.gl.POINTS;
-    return this.animate();
+    
+    this.redraw();
   };
   
   ruse.prototype.setColor = function(r, g, b, a) {

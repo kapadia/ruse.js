@@ -4,15 +4,18 @@ ruse.prototype.scatter3D = function(data) {
   
   this.gl.useProgram(this.programs.ruse);
   
+  // Reset when transitioning from another chart type
   if (this.state !== "scatter3D") {
     this["switch"] = 0;
     this.hasData = false;
+    this.translateBy = undefined;
+    this.removeAxes();
   }
   this.state = "scatter3D";
   
-  // Add perspective when working in three dimensions
-  // mat4.perspective(@pMatrix, 45.0, 1.0, 0.1, 100.0)
+  // Set perspective matrix
   mat4.perspective(this.pMatrix, 45.0, this.canvas.width / this.canvas.height, 0.1, 100.0);
+  
   this.translateBy = this.translateBy || [0.0, 0.0, -4.0];
   this.gl.uniform1f(this.uZComponent, 1.0);
   
@@ -46,12 +49,9 @@ ruse.prototype.scatter3D = function(data) {
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, initialVertices, this.gl.STATIC_DRAW);
     this.extents = {
-      xmin: min1,
-      xmax: max1,
-      ymin: min2,
-      ymax: max2,
-      zmin: min3,
-      zmax: max3
+      xmin: min1, xmax: max1,
+      ymin: min2, ymax: max2,
+      zmin: min3, zmax: max3
     };
     this.hasData = true;
   }
@@ -59,39 +59,45 @@ ruse.prototype.scatter3D = function(data) {
   this.dataBuffer1.numItems = nVertices;
   this.dataBuffer2.itemSize = vertexSize;
   this.dataBuffer2.numItems = nVertices;
+  
   if (this["switch"] === 0) {
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
     this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition1, this.dataBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
+    
     this.gl.uniform3f(this.uMinimum1, this.extents.xmin, this.extents.ymin, this.extents.zmin);
     this.gl.uniform3f(this.uMaximum1, this.extents.xmax, this.extents.ymax, this.extents.zmax);
     this.gl.uniform3f(this.uMinimum2, min1, min2, min3);
     this.gl.uniform3f(this.uMaximum2, max1, max2, max3);
+    
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer2);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
     this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition2, this.dataBuffer2.itemSize, this.gl.FLOAT, false, 0, 0);
+    
     this["switch"] = 1;
   } else {
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
     this.gl.bufferData(this.gl.ARRAY_BUFFER, vertices, this.gl.STATIC_DRAW);
     this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition1, this.dataBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
+    
     this.gl.uniform3f(this.uMinimum1, min1, min2, min3);
     this.gl.uniform3f(this.uMaximum1, max1, max2, max3);
     this.gl.uniform3f(this.uMinimum2, this.extents.xmin, this.extents.ymin, this.extents.zmin);
     this.gl.uniform3f(this.uMaximum2, this.extents.xmax, this.extents.ymax, this.extents.zmax);
+    
     this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer2);
     this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition2, this.dataBuffer2.itemSize, this.gl.FLOAT, false, 0, 0);
+    
     this["switch"] = 0;
   }
+  
   this.extents = {
-    xmin: min1,
-    xmax: max1,
-    ymin: min2,
-    ymax: max2,
-    zmin: min3,
-    zmax: max3
+    xmin: min1, xmax: max1,
+    ymin: min2, ymax: max2,
+    zmin: min3, zmax: max3
   };
+  
   this._setupMouseControls();
-  this.removeAxes();
   this.drawMode = this.gl.POINTS;
-  return this.animate();
+  
+  this.redraw();
 };
