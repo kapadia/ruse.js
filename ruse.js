@@ -1,6 +1,7 @@
 ruse = (function(){  
   function ruse(arg, width, height) {
     
+    // Settings
     this.margin = 0.02;
     this.fontSize = 10;
     this.tickFontSize = 9;
@@ -17,10 +18,12 @@ ruse = (function(){
     // Turn off animation by toggling this parameter
     this.animation = true;
     
+    // State variables
     this.drawMode = null;
     this.extents = null;
     this.hasData = false;
     
+    // Depending on argument to constructor, use an existing GL context or create a new one
     var s = arg.constructor.toString();
     if (s.indexOf('WebGLRenderingContext') > -1 || s.indexOf('rawgl') > -1) {
       this.gl = arg;
@@ -31,17 +34,21 @@ ruse = (function(){
     } else {
       this.width = width;
       this.height = height;
+      
       this.canvas = document.createElement('canvas');
       this.canvas.setAttribute('width', this.width);
       this.canvas.setAttribute('height', this.height);
       this.canvas.setAttribute('class', 'ruse');
       this.canvas.style.position = 'absolute';
+      
       this.gl = this.canvas.getContext('webgl') || this.canvas.getContext('experimental-webgl');
-      if (!this.gl) {
+      if (!this.gl)
         return null;
-      }
+      
       arg.appendChild(this.canvas);
     }
+    
+    // Create a canvas for axes
     this.axesCanvas = document.createElement('canvas');
     this.axesCanvas.setAttribute('width', this.width);
     this.axesCanvas.setAttribute('height', this.height);
@@ -49,11 +56,13 @@ ruse = (function(){
     this.axesCanvas.style.position = 'absolute';
     this.gl.canvas.parentElement.appendChild(this.axesCanvas);
     
+    // Create WebGL programs (one for plot another for axes)
     var shaders = ruse.shaders;
     this.programs = {};
     this.programs["ruse"] = this._createProgram(this.gl, shaders.vertex, shaders.fragment);
     this.programs["axes"] = this._createProgram(this.gl, shaders.axesVertex, shaders.axesFragment);
     
+    // Get GL uniforms
     this.uColor       = this.gl.getUniformLocation(this.programs.ruse, "uColor");
     this.uMinimum1    = this.gl.getUniformLocation(this.programs.ruse, "uMinimum1");
     this.uMaximum1    = this.gl.getUniformLocation(this.programs.ruse, "uMaximum1");
@@ -65,9 +74,11 @@ ruse = (function(){
     
     this.gl.useProgram(this.programs.ruse);
     
+    // Apply settings to uniforms
     this.gl.uniform4f(this.uColor, 0.0, 0.4431, 0.8980, 1.0);
     this.gl.uniform1f(this.uMargin, this.getMargin());
     
+    // Create matrices for navigation
     this.pMatrix = mat4.create();
     this.mvMatrix = mat4.create();
     this.rotationMatrix = mat4.create();
@@ -77,12 +88,15 @@ ruse = (function(){
     this.gl.clear(this.gl.COLOR_BUFFER_BIT | this.gl.DEPTH_BUFFER_BIT);
     this.gl.enable(this.gl.DEPTH_TEST);
     
+    // Create buffers that will store data
     this.dataBuffer1 = this.gl.createBuffer();
     this.dataBuffer2 = this.gl.createBuffer();
     this.axesBuffer = this.gl.createBuffer();
     this.axesBuffer2 = this.gl.createBuffer();
     
+    // Create switch to toggle between two datasets
     this["switch"] = 0;
+    
     this.state = null;
     this.isAnimating = false;
     this.setupAxes3d();
@@ -167,6 +181,7 @@ ruse = (function(){
   
   ruse.prototype._toRadians = function(deg) { return deg * 0.017453292519943295; };
   
+  // Define mouse interactions
   ruse.prototype._setupMouseControls = function() {
     
     var _this = this;
@@ -256,6 +271,8 @@ ruse = (function(){
     lineWidthX = lineWidth / this.width;
     lineWidthY = lineWidth / this.height;
     
+    // Define vertices for axes
+    // TODO: Compute vertices instead of explicitly setting them
     vertices = new Float32Array([
       -1.0, -lineWidthY, -lineWidthX,
       1.0, -lineWidthY, -lineWidthX,
@@ -352,6 +369,8 @@ ruse = (function(){
     this.gl.drawArrays(this.gl.TRIANGLES, 0, this.axesBuffer.numItems);
   };
   
+  // Draw 2D axes, ticks and labels
+  // TODO: Refactor!
   ruse.prototype.drawAxes = function() {
     var context, i, index, key1width, key2width, lineWidth, lineWidthX, lineWidthY, margin, textWidth, value, vertices, x, x1, x2, xTick, xTickValues, xTicks, xp, y, y1, y2, yTick, yTickValues, yTicks, yp, _i, _j, _k, _len, _len1, _len2, _ref, _ref1, _ref2, _ref3;
     this.axesCanvas.width = this.axesCanvas.width;
@@ -431,7 +450,7 @@ ruse = (function(){
     x = -1 * (margin * this.height / 2 + key2width);
     y = margin * this.width / 2 - 2 * this.fontSize - 8;
     context.fillText("" + this.key2, x, y);
-    return context.restore();
+    context.restore();
   };
   
   
@@ -494,6 +513,7 @@ ruse = (function(){
     return steps;
   };
   
+  // Get the minimum and maximum of each dimension from an array of key-value objects
   ruse.prototype.getExtentFromObjects = function(data) {
     var i, index, key, keys, maximums, minimums, val, _i, _j, _len, _len1;
     keys = Object.keys(data[0]);
@@ -520,6 +540,7 @@ ruse = (function(){
     return [minimums, maximums];
   };
   
+  // Get the minimum and maximum from an array, support NaNs.
   ruse.prototype.getExtent = function(arr) {
     var index, max, min, value;
     
@@ -596,6 +617,7 @@ ruse = (function(){
     throw "Input data not recognized.";
   };
   
+  // Transitions between two data sets.
   ruse.prototype.animate = function() {
     var _this = this,
         i = 0;
@@ -624,6 +646,8 @@ ruse = (function(){
   
   };
   
+  // General call for a redraw. Determines the state of the animation setting,
+  // and draws accordingly.
   ruse.prototype.redraw = function() {
     var uTime;
     
