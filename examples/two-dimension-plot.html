@@ -68,34 +68,78 @@
         yAxisEl.appendChild(optionY);
       }
       
-      console.log(table.rows);
       
-      table.getRows(0, table.rows, function(rows) {
+      xAxisEl.onchange = function(e) {
         
-        xAxisEl.onchange = function(e) {
-          var key1 = xAxisEl.value;
-          var key2 = yAxisEl.value;
+        var key1 = xAxisEl.value;
+        var key2 = yAxisEl.value;
+        
+        table.getColumn(key1, function(col1) {
+          table.getColumn(key2, function(col2) {
+            
+            var data = new Float32Array(2 * col1.length);
+            
+            var data = new Float32Array(2 * col1.length);
+            for (var i = 0; i < data.length; i+=2) {
+              var idx = i / 2;
           
-          data = rows.map(function(d) {
-            datum = {};
-            datum[key1] = d[key1];
-            datum[key2] = d[key2];
-            return datum;
+              data[i] = col1[idx];
+              data[i + 1] = col2[idx];
+            }
+            
+            r.scatter2D(data);
           });
-          r.plot(data);
-        }
-        yAxisEl.onchange = function(e) {
-          xAxisEl.onchange(e);
-        }
-        
-        xAxisEl.removeAttribute('disabled');
-        yAxisEl.removeAttribute('disabled');
-        xAxisEl.value = "RACEN";
-        yAxisEl.value = "DECCEN";
-        xAxisEl.onchange();
-        
-        window.r = ruse;
-      });
+        });
+      
+      }
+      yAxisEl.onchange = function(e) {
+        xAxisEl.onchange(e);
+      }
+      
+      xAxisEl.removeAttribute('disabled');
+      yAxisEl.removeAttribute('disabled');
+      xAxisEl.value = "RACEN";
+      yAxisEl.value = "DECCEN";
+      xAxisEl.onchange();
+      
+      window.r = ruse;
+      
+      // table.getRows(0, table.rows, function(rows) {
+      //
+      //   xAxisEl.onchange = function(e) {
+      //
+      //     var key1 = xAxisEl.value;
+      //     var key2 = yAxisEl.value;
+      //
+      //     window.table = table
+      //     console.log(key1, key2);
+      //     var col1 = table.getColumn(key1);
+      //     var col2 = table.getColumn(key2);
+      //
+      //     var data = new Float32Array(2 * col1.length);
+      //     for (var i = 0; i < data.length; i+=2) {
+      //       var idx = i / 2
+      //
+      //       data[i] = col1[idx];
+      //       data[i + 1] = col2[idx];
+      //     }
+      //
+      //     console.log(data);
+      //
+      //     r.plot(data);
+      //   }
+      //   yAxisEl.onchange = function(e) {
+      //     xAxisEl.onchange(e);
+      //   }
+      //
+      //   xAxisEl.removeAttribute('disabled');
+      //   yAxisEl.removeAttribute('disabled');
+      //   xAxisEl.value = "RACEN";
+      //   yAxisEl.value = "DECCEN";
+      //   xAxisEl.onchange();
+      //
+      //   window.r = ruse;
+      // });
     });
     
   }
