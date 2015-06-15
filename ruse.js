@@ -797,7 +797,37 @@ ruse = (function(){
   // Data should be a Float32Array containing x/y values serialized as x0, y0, x1, y1, etc.
   ruse.prototype.scatter2D = function(data) {
     var datum, i, index, initialVertices, margin, max1, max2, min1, min2, nVertices, range1, range2, vertexSize, _i, _j, _len, _len1, _ref, _ref1, _ref2, _ref3;
-  
+    
+    // Get data extents
+    var xmin = data[0];
+    var xmax = data[0];
+    var ymin = data[1];
+    var ymax = data[1];
+    
+    for (var i = 0; i < data.length; i+=2) {
+      var x = data[i];
+      var y = data[i+1];
+      
+      if (x < xmin) {
+        xmin = x;
+      }
+      if (x > xmax) {
+        xmax = x;
+      }
+      if (y < ymin) {
+        ymin = y;
+      }
+      if (y > ymax) {
+        ymax = y;
+      }
+    }
+    this.extents = {
+      xmin: xmin,
+      xmax: xmax,
+      ymin: ymin,
+      ymax: ymax
+    };
+    
     this.gl.useProgram(this.programs.ruse);
     if (this.state !== "scatter2D") {
       this["switch"] = 0;
@@ -820,8 +850,8 @@ ruse = (function(){
     _ref = Object.keys(data[0]), this.key1 = _ref[0], this.key2 = _ref[1];
     _ref1 = this.getExtentFromObjects(data), (_ref2 = _ref1[0], min1 = _ref2[0], min2 = _ref2[1]), (_ref3 = _ref1[1], max1 = _ref3[0], max2 = _ref3[1]);
     
-    range1 = max1 - min1;
-    range2 = max2 - min2;
+    range1 = xmax - xmin;
+    range2 = ymax - ymin;
     
     if (!this.hasData) {
       
@@ -831,10 +861,10 @@ ruse = (function(){
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
       this.gl.bufferData(this.gl.ARRAY_BUFFER, initialVertices, this.gl.STATIC_DRAW);
       this.extents = {
-        xmin: min1,
-        xmax: max1,
-        ymin: min2,
-        ymax: max2
+        xmin: xmin,
+        xmax: xmax,
+        ymin: ymin,
+        ymax: ymax
       };
       this.hasData = true;
     }
@@ -844,22 +874,29 @@ ruse = (function(){
     this.dataBuffer2.numItems = nVertices;
     
     if (this["switch"] === 0) {
+  
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
       this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition1, this.dataBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
+      
       this.gl.uniform3f(this.uMinimum1, this.extents.xmin, this.extents.ymin, 0);
       this.gl.uniform3f(this.uMaximum1, this.extents.xmax, this.extents.ymax, 1);
-      this.gl.uniform3f(this.uMinimum2, min1, min2, 0);
-      this.gl.uniform3f(this.uMaximum2, max1, max2, 1);
+      
+      this.gl.uniform3f(this.uMinimum2, this.extents.xmin, this.extents.ymin, 0);
+      this.gl.uniform3f(this.uMaximum2, this.extents.xmax, this.extents.ymax, 1);
+      
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer2);
       this.gl.bufferData(this.gl.ARRAY_BUFFER, data, this.gl.STATIC_DRAW);
       this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition2, this.dataBuffer2.itemSize, this.gl.FLOAT, false, 0, 0);
       this["switch"] = 1;
     } else {
+      
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer1);
       this.gl.bufferData(this.gl.ARRAY_BUFFER, data, this.gl.STATIC_DRAW);
       this.gl.vertexAttribPointer(this.programs.ruse.aVertexPosition1, this.dataBuffer1.itemSize, this.gl.FLOAT, false, 0, 0);
-      this.gl.uniform3f(this.uMinimum1, min1, min2, 0);
-      this.gl.uniform3f(this.uMaximum1, max1, max2, 1);
+      
+      this.gl.uniform3f(this.uMinimum1, this.extents.xmin, this.extents.ymin, 0);
+      this.gl.uniform3f(this.uMaximum1, this.extents.xmax, this.extents.ymax, 1);
+      
       this.gl.uniform3f(this.uMinimum2, this.extents.xmin, this.extents.ymin, 0);
       this.gl.uniform3f(this.uMaximum2, this.extents.xmax, this.extents.ymax, 1);
       this.gl.bindBuffer(this.gl.ARRAY_BUFFER, this.dataBuffer2);
@@ -868,10 +905,10 @@ ruse = (function(){
     }
     
     this.extents = {
-      xmin: min1,
-      xmax: max1,
-      ymin: min2,
-      ymax: max2
+      xmin: xmin,
+      xmax: xmax,
+      ymin: ymin,
+      ymax: ymax
     };
     
     this.drawAxes();
