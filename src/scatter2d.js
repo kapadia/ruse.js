@@ -19,7 +19,7 @@ ruse.prototype.scatter2D = function(data) {
   margin = this.getMargin();
   
   vertexSize = 2;
-  nVertices = data.length;
+  nVertices = data.length / 2;
   
   _ref = Object.keys(data[0]), this.key1 = _ref[0], this.key2 = _ref[1];
   _ref1 = this.getExtentFromObjects(data), (_ref2 = _ref1[0], min1 = _ref2[0], min2 = _ref2[1]), (_ref3 = _ref1[1], max1 = _ref3[0], max2 = _ref3[1]);

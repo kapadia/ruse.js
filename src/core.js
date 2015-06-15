@@ -665,3 +665,9 @@ ruse.prototype.redraw = function() {
   }
   
 };
+
+
+// Generalize data deserialization to support user-defined serializations
+ruse.prototype.deserialize = function() {
+  
+}
